@@ -170,19 +170,24 @@ if not st.session_state.patient_selected:
             try:
                 last_dec = supabase.table("final_diagnostic_decisions") \
                     .select("final_decision, created_at") \
-                    .eq("patient_id"
-# ── Sidebar (shown after patient selected) ─────────────────────────
-with st.sidebar:
-    st.title("🧠 Multi-Agent Medical AI")
-    st.caption("Autonomous · Self-Reflecting · RAG-Powered")
-    st.markdown("---")
-    st.markdown(f"**Patient:** {selected_patient['name']}")
-    st.caption(f"Age: {selected_patient.get('age','?')} | {selected_patient.get('gender','')}")
+                    .eq("patient_id", selected["id"]) \
+                    .order("created_at", desc=True).limit(1).execute()
+                if last_dec.data:
+                    d = last_dec.data[0]
+                    st.info(f"**Last result:** {d['final_decision']}  \n`{d['created_at'][:10]}`")
+            except Exception:
+                pass
 
-    if st.button("↩ Switch Patient", use_container_width=True):
-        st.session_state.patient_selected = False
-        st.session_state.patient = None
+            if st.button("▶ Continue Session", use_container_width=True, type="primary"):
+                st.session_state.patient = selected
+                st.session_state.patient_selected = True
+                st.rerun()
+        else:
+            st.warning("No existing patients found. Please register as a new patient.")
+
     st.stop()  # nothing renders until patient is selected
+
+
 
 # ── Grab selected patient ──────────────────────────────────────────
 selected_patient = st.session_state.patient
