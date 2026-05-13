@@ -1,0 +1,16 @@
+# Docker ignore file — keeps the image small and secure
+.env
+.venv
+__pycache__/
+*.py[oc]
+*.egg-info
+.git
+.gitignore
+*.ipynb
+*.csv
+*.xlsx
+supabase/
+test_db.py
+uv.lock
+pyproject.toml
+README.md
