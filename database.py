@@ -81,3 +81,24 @@ def save_final_decision(patient_id: str, ai_prediction: str, nds_score: int, nss
         "final_decision": final_decision
     }
     return supabase.table("final_diagnostic_decisions").insert(data).execute()
+
+
+def create_patient(name: str, age: int, gender: str, diabetes_type: str = None, diabetes_duration: int = None) -> dict:
+    """Create a new patient record and return the created row."""
+    import uuid
+    if not supabase:
+        return {}
+    new_id = str(uuid.uuid4())
+    data = {
+        "id": new_id,
+        "name": name.strip(),
+        "age": age,
+        "gender": gender,
+    }
+    if diabetes_type:
+        data["diabetes_type"] = diabetes_type
+    if diabetes_duration is not None:
+        data["diabetes_duration"] = diabetes_duration
+
+    res = supabase.table("patients").insert(data).execute()
+    return res.data[0] if res.data else {}

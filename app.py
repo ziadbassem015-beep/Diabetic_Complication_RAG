@@ -4,7 +4,7 @@ Drives the DiagnosticGraph and streams intermediate agent events to the UI.
 """
 import streamlit as st
 import uuid
-from database import get_all_patients, supabase
+from database import get_all_patients, supabase, create_patient
 from multi_agent import DiagnosticGraph, MultiAgentState
 
 st.set_page_config(
@@ -85,40 +85,125 @@ for k, v in {
     "graph": None,
     "session_id": str(uuid.uuid4()),
     "patient": None,
-    "ui_events": [],    # rendered events
+    "ui_events": [],
     "started": False,
+    "patient_selected": False,   # NEW: tracks welcome screen state
 }.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
-# ── Sidebar ────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════
+# WELCOME / PATIENT SCREEN  (shown before anything else)
+# ══════════════════════════════════════════════════════════════════
+if not st.session_state.patient_selected:
+    st.markdown("""
+    <div style="text-align:center; padding: 40px 0 20px 0;">
+        <div style="font-size:64px;">🩺</div>
+        <h1 style="font-size:2.4rem; font-weight:800; margin:0;">
+            Diabetic Complication<br>Diagnostic System
+        </h1>
+        <p style="color:#666; font-size:1.05rem; margin-top:10px;">
+            AI-Powered · Multi-Agent · Self-Reflecting
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    col_new, col_existing = st.columns(2, gap="large")
+
+    # ── NEW PATIENT ────────────────────────────────────────────────
+    with col_new:
+        st.markdown("### 🆕 New Patient")
+        st.caption("Register your details to start a fresh diagnostic session.")
+
+        with st.form("new_patient_form"):
+            name = st.text_input("Full Name *", placeholder="e.g. Ahmed Ali")
+            age  = st.number_input("Age *", min_value=1, max_value=120, value=45, step=1)
+            gender = st.selectbox("Gender *", ["Male", "Female", "Prefer not to say"])
+            diabetes_type = st.selectbox(
+                "Diabetes Type",
+                ["Type 1", "Type 2", "Gestational", "Pre-diabetes", "Unknown"]
+            )
+            duration = st.number_input(
+                "Years with Diabetes", min_value=0, max_value=80, value=5, step=1
+            )
+
+            submitted = st.form_submit_button("✅ Register & Start", use_container_width=True, type="primary")
+            if submitted:
+                if not name.strip():
+                    st.error("Please enter your name.")
+                else:
+                    with st.spinner("Creating your profile..."):
+                        try:
+                            patient = create_patient(
+                                name=name,
+                                age=int(age),
+                                gender=gender,
+                                diabetes_type=diabetes_type,
+                                diabetes_duration=int(duration)
+                            )
+                            if patient:
+                                st.session_state.patient = patient
+                                st.session_state.patient_selected = True
+                                st.rerun()
+                            else:
+                                st.error("Could not create patient. Check Supabase connection.")
+                        except Exception as e:
+                            st.error(f"Error: {e}")
+
+    # ── EXISTING PATIENT ───────────────────────────────────────────
+    with col_existing:
+        st.markdown("### 🔄 Existing Patient")
+        st.caption("Continue with a previously registered profile.")
+
+        patients = get_all_patients()
+        if patients:
+            patient_map = {
+                f"{p['name']} — Age {p.get('age','?')} ({p.get('gender','')})": p
+                for p in patients
+            }
+            sel = st.selectbox("Select your profile", list(patient_map.keys()))
+            selected = patient_map[sel]
+
+            # Show last session info if available
+            try:
+                last_dec = supabase.table("final_diagnostic_decisions") \
+                    .select("final_decision, created_at") \
+                    .eq("patient_id"
+# ── Sidebar (shown after patient selected) ─────────────────────────
 with st.sidebar:
     st.title("🧠 Multi-Agent Medical AI")
     st.caption("Autonomous · Self-Reflecting · RAG-Powered")
     st.markdown("---")
+    st.markdown(f"**Patient:** {selected_patient['name']}")
+    st.caption(f"Age: {selected_patient.get('age','?')} | {selected_patient.get('gender','')}")
 
-    patients = get_all_patients()
-    if not patients:
-        st.warning("No patients found.")
-        if st.button("➕ Create Test Patient"):
-            pid = str(uuid.uuid4())
-            supabase.table("patients").insert(
-                {"id": pid, "name": "Test Patient", "age": 50, "gender": "Not specified"}
-            ).execute()
-            st.rerun()
-        st.stop()
+    if st.button("↩ Switch Patient", use_container_width=True):
+        st.session_state.patient_selected = False
+        st.session_state.patient = None
+    st.stop()  # nothing renders until patient is selected
 
-    patient_map = {f"{p['name']} (Age {p.get('age','?')})": p for p in patients}
-    sel = st.selectbox("Patient", list(patient_map.keys()))
-    selected_patient = patient_map[sel]
+# ── Grab selected patient ──────────────────────────────────────────
+selected_patient = st.session_state.patient
 
-    if st.session_state.patient != selected_patient:
-        st.session_state.patient = selected_patient
+# ── Sidebar (shown after patient selected) ─────────────────────────
+with st.sidebar:
+    st.title("🧠 Multi-Agent Medical AI")
+    st.caption("Autonomous · Self-Reflecting · RAG-Powered")
+    st.markdown("---")
+    st.markdown(f"**Patient:** {selected_patient['name']}")
+    st.caption(f"Age: {selected_patient.get('age','?')} | {selected_patient.get('gender','')}")
+
+    if st.button("↩ Switch Patient", use_container_width=True):
+        st.session_state.patient_selected = False
+        st.session_state.patient = None
         st.session_state.graph = None
         st.session_state.ui_events = []
         st.session_state.started = False
+        st.rerun()
 
-    if st.button("🔄 Reset Session"):
+    if st.button("🔄 Reset Session", use_container_width=True):
         st.session_state.graph = None
         st.session_state.ui_events = []
         st.session_state.started = False
@@ -126,41 +211,39 @@ with st.sidebar:
 
     st.markdown("---")
     st.subheader("Agent Status")
-
-    g: DiagnosticGraph = st.session_state.graph
-    if g:
-        state = g.state
-        st.markdown(f'<div class="node-flow">Current: <b>{state.current_node}</b></div>', unsafe_allow_html=True)
-        col1, col2 = st.columns(2)
-        col1.metric("Iteration", f"{state.iteration}/{state.max_iterations}")
-        col2.metric("Confidence", f"{g.confidence:.0%}")
-        col1.metric("Answers", len(state.answers))
-        col2.metric("Tools Called", len([e for e in state.audit_log if "Executing" in e.action]))
-
-        if state.plan:
-            st.markdown("**Diagnostic Plan:**")
-            for i, step in enumerate(state.plan, 1):
-                icon = "✅" if i <= state.reflection_count else "◻"
-                st.markdown(f'<div class="plan-step">{icon} {i}. {step}</div>', unsafe_allow_html=True)
+    g_side: DiagnosticGraph = st.session_state.graph
+    if g_side:
+        s = g_side.state
+        st.markdown(f'<div class="node-flow">Node: <b>{s.current_node}</b></div>', unsafe_allow_html=True)
+        c1, c2 = st.columns(2)
+        c1.metric("Iteration", f"{s.iteration}/{s.max_iterations}")
+        c2.metric("Confidence", f"{g_side.confidence:.0%}")
+        c1.metric("Answers", len(s.answers))
+        c2.metric("Reflections", s.reflection_count)
+        if s.plan:
+            st.markdown("**Plan:**")
+            for i, step in enumerate(s.plan, 1):
+                st.markdown(f'<div class="plan-step">{"✅" if i <= s.reflection_count else "◻"} {i}. {step}</div>',
+                            unsafe_allow_html=True)
 
     st.markdown("---")
-    # Agent graph visualization
     st.subheader("Agent Graph")
-    st.markdown("""
-```
-[Planner] → [Memory]
-    ↓
-[Reasoning] ←─────────┐
-    ↓                  │
- [Tool] → [Wait]       │
-    ↓                  │
-[Reflection] ──────────┘
-    ↓
-  [ML] → [Fusion]
-    ↓
- [Report] → END
-```
-""")
+    st.code(
+        "[Planner] → [Memory]\n"
+        "    ↓\n"
+        "[Reasoning] ←────┐\n"
+        "    ↓             │\n"
+        " [Tool] → [Wait]  │\n"
+        "    ↓             │\n"
+        "[Reflection] ─────┘\n"
+        "    ↓\n"
+        "  [ML] → [Fusion]\n"
+        "    ↓\n"
+        " [Report] → END",
+        language=None
+    )
+
+
 
 # ── Main UI ────────────────────────────────────────────────────────
 st.title("🧠 Autonomous Multi-Agent Medical Diagnostic System")
