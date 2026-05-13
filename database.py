@@ -84,7 +84,9 @@ def save_final_decision(patient_id: str, ai_prediction: str, nds_score: int, nss
 
 
 def create_patient(name: str, age: int, gender: str, diabetes_type: str = None, diabetes_duration: int = None) -> dict:
-    """Create a new patient record and return the created row."""
+    """Create a new patient record and return the created row.
+    Note: patients table only has id, name, age, gender — extra fields are UI-only.
+    """
     import uuid
     if not supabase:
         return {}
@@ -95,10 +97,10 @@ def create_patient(name: str, age: int, gender: str, diabetes_type: str = None, 
         "age": age,
         "gender": gender,
     }
-    if diabetes_type:
-        data["diabetes_type"] = diabetes_type
-    if diabetes_duration is not None:
-        data["diabetes_duration"] = diabetes_duration
-
     res = supabase.table("patients").insert(data).execute()
-    return res.data[0] if res.data else {}
+    # Attach extra info to the returned dict (in-memory only, not persisted)
+    patient = res.data[0] if res.data else {}
+    if patient:
+        patient["diabetes_type"] = diabetes_type
+        patient["diabetes_duration"] = diabetes_duration
+    return patient
