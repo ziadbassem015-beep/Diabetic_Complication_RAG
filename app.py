@@ -4,7 +4,7 @@ Drives the DiagnosticGraph and streams intermediate agent events to the UI.
 """
 import streamlit as st
 import uuid
-from database import get_all_patients, supabase, create_patient
+from core.database import get_all_patients, supabase, create_patient
 from multi_agent import DiagnosticGraph, MultiAgentState
 
 st.set_page_config(

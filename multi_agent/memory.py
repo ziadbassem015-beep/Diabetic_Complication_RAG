@@ -3,8 +3,8 @@ multi_agent/memory.py — Hybrid Memory System.
 Manages short-term (conversation), long-term (RAG/Supabase), and episodic (past sessions).
 """
 from typing import Any
-from rag_engine import generate_embedding
-from database import save_conversation_memory, supabase
+from core.rag_engine import generate_embedding
+from core.database import save_conversation_memory, supabase
 
 
 class HybridMemory:

@@ -3,24 +3,20 @@ import json
 import requests
 from openai import OpenAI
 from dotenv import load_dotenv
-from database import get_patient_clinical_data, get_patient_ml_prediction, supabase
+from core.database import get_patient_clinical_data, get_patient_ml_prediction, supabase
 
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://models.inference.ai.azure.com")
 
-# Initialize OpenAI client pointed at GitHub Models
-client = OpenAI(
-    api_key=OPENAI_API_KEY,
-    base_url=OPENAI_BASE_URL
-)
+client = OpenAI(api_key=OPENAI_API_KEY, base_url=OPENAI_BASE_URL)
 
 
 def call_llm(prompt: str) -> str:
     """Call the LLM safely, returns a raw string response."""
     if not OPENAI_API_KEY:
-        return '{"message": "Warning: OPENAI_API_KEY is not set in .env", "suggested_answers": ["OK"], "is_diagnosis_complete": false}'
+        return '{"message": "Warning: OPENAI_API_KEY is not set in .env", "continue": false}'
     try:
         response = client.chat.completions.create(
             model="gpt-4o",
@@ -30,7 +26,7 @@ def call_llm(prompt: str) -> str:
         return response.choices[0].message.content
     except Exception as e:
         print(f"LLM Error: {e}")
-        return f'{{"message": "Error communicating with AI: {str(e)[:80]}", "suggested_answers": ["Retry"], "is_diagnosis_complete": false}}'
+        return f'{{"message": "Error: {str(e)[:80]}", "continue": false}}'
 
 
 def generate_embedding(text: str) -> list:
@@ -56,15 +52,12 @@ def search_memory(patient_id: str, query: str, limit: int = 5):
     if not query_embedding:
         return []
     try:
-        response = supabase.rpc(
-            "match_memory",
-            {
-                "query_embedding": query_embedding,
-                "match_threshold": 0.5,
-                "match_count": limit,
-                "p_patient_id": patient_id
-            }
-        ).execute()
+        response = supabase.rpc("match_memory", {
+            "query_embedding": query_embedding,
+            "match_threshold": 0.5,
+            "match_count": limit,
+            "p_patient_id": patient_id
+        }).execute()
         return response.data
     except Exception as e:
         print(f"Memory search error: {e}")
@@ -178,7 +171,7 @@ Output ONLY this JSON:
             cleaned = cleaned[:-3]
         return json.loads(cleaned.strip())
     except Exception as e:
-        print(f"JSON parse error: {e}\nRaw: {raw_response}")
+        print(f"JSON parse error: {e}\\nRaw: {raw_response}")
         return {
             "message": raw_response,
             "suggested_answers": ["Continue", "Get my diagnosis"],

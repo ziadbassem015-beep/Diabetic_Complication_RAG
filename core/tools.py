@@ -4,26 +4,28 @@ Each tool wraps existing logic and returns a structured Observation dict.
 The agent calls these tools dynamically based on its reasoning.
 """
 from typing import Any
-from agent_state import AgentState
-from database import (
+# Use full path to agent_state if it's in legacy or just multi_agent.state?
+# Wait, this tool is using legacy agent_state. AgentState.
+# The user uses multi_agent so we shouldn't rely on legacy. But in agents.py they are imported.
+# Let's fix the imports for core.tools
+from core.database import (
     get_patient_clinical_data,
     get_patient_ml_prediction,
     save_conversation_memory,
     supabase,
 )
-from rag_engine import generate_embedding
-from questionnaire import (
+from core.rag_engine import generate_embedding
+from core.questionnaire import (
     calculate_section_scores,
     ml_neuropathy_prediction,
     final_decision as compute_final_decision,
 )
 
-
 # ══════════════════════════════════════════════════════════════════
 # TOOL IMPLEMENTATIONS
 # ══════════════════════════════════════════════════════════════════
 
-def tool_search_memory(state: AgentState, args: dict) -> dict:
+def tool_search_memory(state: Any, args: dict) -> dict:
     """
     Vector RAG retrieval: finds semantically similar past records in Supabase.
     Args: { "query": "text to search for" }
@@ -54,7 +56,7 @@ def tool_search_memory(state: AgentState, args: dict) -> dict:
         return {"status": "error", "message": str(e)}
 
 
-def tool_get_clinical_data(state: AgentState, args: dict) -> dict:
+def tool_get_clinical_data(state: Any, args: dict) -> dict:
     """
     Fetches the latest NSS and NDS clinical scores from Supabase.
     Args: {}
@@ -81,7 +83,7 @@ def tool_get_clinical_data(state: AgentState, args: dict) -> dict:
         return {"status": "error", "message": str(e)}
 
 
-def tool_get_ml_prediction(state: AgentState, args: dict) -> dict:
+def tool_get_ml_prediction(state: Any, args: dict) -> dict:
     """
     Fetches the stored ML neuropathy prediction from Supabase.
     Args: {}
@@ -110,7 +112,7 @@ def tool_get_ml_prediction(state: AgentState, args: dict) -> dict:
         return {"status": "error", "message": str(e)}
 
 
-def tool_compute_ml_prediction(state: AgentState, args: dict) -> dict:
+def tool_compute_ml_prediction(state: Any, args: dict) -> dict:
     """
     Computes ML neuropathy prediction from patient's questionnaire answers.
     Args: {}  (uses state.answers + state.patient_info automatically)
@@ -142,7 +144,7 @@ def tool_compute_ml_prediction(state: AgentState, args: dict) -> dict:
     return result
 
 
-def tool_calculate_fusion_score(state: AgentState, args: dict) -> dict:
+def tool_calculate_fusion_score(state: Any, args: dict) -> dict:
     """
     Runs the final_decision weighted formula: 1.0×AI + 1.2×NDS + 0.9×NSS.
     Args: {}  (uses state.ml_results + state.clinical_data automatically)
@@ -177,7 +179,7 @@ def tool_calculate_fusion_score(state: AgentState, args: dict) -> dict:
     return result
 
 
-def tool_ask_patient_question(state: AgentState, args: dict) -> dict:
+def tool_ask_patient_question(state: Any, args: dict) -> dict:
     """
     Pauses the agent loop to ask the patient a question.
     Args: { "question": "...", "options": ["opt1", "opt2", ...], "key": "answer_key" }
@@ -203,7 +205,7 @@ def tool_ask_patient_question(state: AgentState, args: dict) -> dict:
     }
 
 
-def tool_save_clinical_scores(state: AgentState, args: dict) -> dict:
+def tool_save_clinical_scores(state: Any, args: dict) -> dict:
     """
     Saves computed NSS/NDS/Gum/Ulcer scores to Supabase.
     Args: {}  (uses state.answers)
@@ -280,8 +282,7 @@ Available tools you can call:
    → Use when: all sections of questionnaire are answered.
 """
 
-
-def execute_tool(tool_name: str, state: AgentState, args: dict) -> dict:
+def execute_tool(tool_name: str, state: Any, args: dict) -> dict:
     """Execute a tool from the registry and return its observation."""
     if tool_name not in TOOL_REGISTRY:
         return {"status": "error", "message": f"Unknown tool: {tool_name}"}

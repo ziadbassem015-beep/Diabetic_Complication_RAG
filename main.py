@@ -1,8 +1,8 @@
 import uuid
 import sys
 from dotenv import load_dotenv
-from database import get_all_patients, save_conversation_memory, supabase
-from rag_engine import run_diagnostic_pipeline, generate_embedding
+from core.database import get_all_patients, save_conversation_memory, supabase
+from core.rag_engine import run_diagnostic_pipeline, generate_embedding
 
 load_dotenv()
 

@@ -1,8 +1,9 @@
 """
 multi_agent/graph.py — LangGraph-Style Stateful Graph Orchestrator.
 
-Nodes:  planner → memory → reasoning → tool → reflection → ml → fusion → report
-Edges:  conditional routing based on MultiAgentState.next_node
+PHASE 1: Mandatory questionnaire (all questions from questionnaire.py)
+PHASE 2: ML inference + Fusion scoring
+PHASE 3: Reflection + Report generation
 """
 import uuid
 from .state import (
@@ -17,46 +18,36 @@ from .agents import (
     ToolNode, MLInferenceAgent, FusionDecisionAgent,
     ReflectionAgent, ReportGeneratorAgent
 )
+from core.questionnaire import QUESTIONNAIRE  # the full list of questions
+
+NODE_QUESTIONNAIRE = "questionnaire_node"
 
 
 class DiagnosticGraph:
     """
     LangGraph-style stateful graph for the Multi-Agent Diagnostic System.
 
-    Graph Layout:
-        [planner_node]
-              ↓
-        [memory_node]
-              ↓
-        [reasoning_node] ←────────────────┐
-              ↓                            │
-        [tool_node] → [patient_wait]       │
-              ↓                            │
-        [reflection_node] ─────────────────┘
-              ↓ (when data sufficient)
-        [ml_node]
-              ↓
-        [fusion_node]
-              ↓
-        [report_node]
-              ↓
-           [END]
+    Execution Phases (STRICT ORDER):
+    ─────────────────────────────────────────────────────────────────
+    Phase 1  [planner] → [memory] → [questionnaire] ×N questions
+    Phase 2  [ml_node] → [fusion_node]
+    Phase 3  [reflection] → [report] → END
+    ─────────────────────────────────────────────────────────────────
+    The LLM reasoning agent is used only for reflection.
+    The questionnaire is driven by the fixed question list from questionnaire.py.
     """
-
-    MAX_REASONING_LOOPS = 6   # prevent runaway reasoning cycles
 
     def __init__(self, patient: dict, session_id: str = None):
         self.session_id = session_id or str(uuid.uuid4())
 
         # Initialize agents
-        self.planner        = PlannerAgent()
-        self.memory_agent   = MemoryRAGAgent()
-        self.reasoning      = ClinicalReasoningAgent()
-        self.tool_node      = ToolNode()
-        self.ml_agent       = MLInferenceAgent()
-        self.fusion_agent   = FusionDecisionAgent()
-        self.reflector      = ReflectionAgent()
-        self.reporter       = ReportGeneratorAgent()
+        self.planner      = PlannerAgent()
+        self.memory_agent = MemoryRAGAgent()
+        self.reasoning    = ClinicalReasoningAgent()
+        self.ml_agent     = MLInferenceAgent()
+        self.fusion_agent = FusionDecisionAgent()
+        self.reflector    = ReflectionAgent()
+        self.reporter     = ReportGeneratorAgent()
 
         # Initialize shared state
         self.state = MultiAgentState(
@@ -64,10 +55,54 @@ class DiagnosticGraph:
             patient_info={**patient, "session_id": self.session_id},
             current_node=NODE_PLANNER,
             next_node=NODE_PLANNER,
+            max_iterations=len(QUESTIONNAIRE) + 15,  # enough for all questions + phases
         )
 
         # Initialize memory system
         self.memory = HybridMemory(patient["id"], self.session_id)
+
+    # ══════════════════════════════════════════════════════════════
+    # QUESTIONNAIRE NODE — ask one question at a time
+    # ══════════════════════════════════════════════════════════════
+    def _run_questionnaire_node(self):
+        """Ask the next question in the questionnaire list."""
+        step = self.state.questionnaire_step
+
+        if step >= len(QUESTIONNAIRE):
+            # All questions answered — advance to ML
+            self.state.emit("agent_start", "All questions collected. Running ML inference...", "graph")
+            self.state.next_node = NODE_ML
+            return
+
+        q = QUESTIONNAIRE[step]
+        question_text = q["question"]
+        options = q["options"]
+        key = q["key"]
+        section = q.get("section", "")
+        section_emoji = {
+            "NSS": "🧠", "NDS": "🦾", "GUM": "🦷",
+            "ULCER": "🩹", "ML": "📊",
+            "nss": "🧠", "nds": "🦾", "gum": "🦷",
+            "ulcer": "🩹", "ml": "📊"
+        }.get(section, "❓")
+
+        self.state.emit(
+            "agent_start",
+            f"{section_emoji} Section: {section.upper()} — Question {step + 1}/{len(QUESTIONNAIRE)}",
+            "ClinicalReasoningAgent"
+        )
+
+        # Set waiting state
+        self.state.waiting_for_patient = True
+        self.state.pending_question = {
+            "question": f"{section_emoji} {question_text}",
+            "options": [o["label"] for o in options],       # strings only for UI
+            "score_map": {o["label"]: o["score"] for o in options},  # label → score
+            "key": key,
+            "step": step,
+            "section": section
+        }
+        self.state.next_node = NODE_WAIT
 
     # ── Node Execution Map ──────────────────────────────────────────
     def _run_node(self, node: str) -> str:
@@ -77,26 +112,16 @@ class DiagnosticGraph:
 
         if node == NODE_PLANNER:
             self.state = self.planner.run(self.state)
+            self.state.next_node = NODE_MEMORY  # always go to memory after planning
 
         elif node == NODE_MEMORY:
             self.state = self.memory_agent.run(self.state, self.memory)
+            self.state.next_node = NODE_QUESTIONNAIRE  # always start questionnaire after memory
 
-        elif node == NODE_REASONING:
-            self.state.consecutive_reasoning += 1
-            if self.state.consecutive_reasoning > self.MAX_REASONING_LOOPS:
-                # Force advance: break reasoning loop
-                self.state.emit("warning", "Reasoning loop limit reached — advancing to ML.", "graph")
-                self.state.next_node = NODE_ML
-                self.state.consecutive_reasoning = 0
-            else:
-                self.state = self.reasoning.run(self.state)
-
-        elif node == NODE_TOOL:
-            self.state.consecutive_reasoning = 0
-            self.state = self.tool_node.run(self.state)
+        elif node == NODE_QUESTIONNAIRE:
+            self._run_questionnaire_node()
 
         elif node == NODE_ML:
-            self.state.consecutive_reasoning = 0
             self.state = self.ml_agent.run(self.state)
 
         elif node == NODE_FUSION:
@@ -109,32 +134,44 @@ class DiagnosticGraph:
             self.state = self.reporter.run(self.state)
 
         elif node == NODE_WAIT:
-            # Graph pauses here — Streamlit will resume after patient answers
             return NODE_WAIT
 
         return self.state.next_node
 
     # ── Conditional Edge Router ────────────────────────────────────
     def _route(self, current: str, next_proposed: str) -> str:
-        """Apply routing rules on top of agent-proposed next node."""
+        """
+        Hard routing rules — PHASE ORDER IS ENFORCED HERE.
+        No LLM can skip a phase.
+        """
         state = self.state
 
-        # Force completion if max iterations reached
-        if state.iteration >= state.max_iterations:
-            state.emit("warning", "Max iterations reached — forcing report.", "graph")
-            return NODE_REPORT
-
-        # Safety: if done, stay done
+        # Always stop if complete
         if state.is_complete:
             return NODE_END
 
-        # If patient is waiting, do not advance
+        # Pause for patient input
         if state.waiting_for_patient:
             return NODE_WAIT
 
-        # If fusion is computed, always go to report
-        if state.has_fusion() and next_proposed not in (NODE_REPORT, NODE_END):
-            return NODE_REPORT
+        # ── Phase 1: Questionnaire must complete before ML ──────────
+        # If questionnaire not done, never allow ML/Fusion/Report
+        q_done = state.questionnaire_step >= len(QUESTIONNAIRE)
+
+        if not q_done and next_proposed in (NODE_ML, NODE_FUSION, NODE_REPORT, NODE_END):
+            return NODE_QUESTIONNAIRE
+
+        # ── Phase 2: ML must run before Fusion ─────────────────────
+        if q_done and not state.has_ml_data() and next_proposed in (NODE_FUSION, NODE_REPORT):
+            return NODE_ML
+
+        # ── Phase 3: Fusion must run before Report ──────────────────
+        if state.has_ml_data() and not state.has_fusion() and next_proposed == NODE_REPORT:
+            return NODE_FUSION
+
+        # ── After Fusion → Reflection → Report ─────────────────────
+        if state.has_fusion() and next_proposed not in (NODE_REFLECTION, NODE_REPORT, NODE_END):
+            return NODE_REFLECTION
 
         return next_proposed
 
@@ -146,19 +183,15 @@ class DiagnosticGraph:
         """
         Run the graph until it pauses for patient input or reaches END.
         Returns list of stream events accumulated during this run.
-
-        Call this once to kick off the session, then again after each patient answer.
         """
         self.state.stream_events.clear()
-
         current = self.state.next_node
-        visited_since_pause = 0
+        visited = 0
 
         while current not in (NODE_WAIT, NODE_END) and not self.state.is_complete:
-            visited_since_pause += 1
-            if visited_since_pause > 20:
-                # Hard limit — prevent infinite loops
-                self.state.emit("error", "Graph safety limit hit.", "graph")
+            visited += 1
+            if visited > 25:
+                self.state.emit("warning", "Graph safety limit hit.", "graph")
                 break
 
             next_node = self._run_node(current)
@@ -175,30 +208,37 @@ class DiagnosticGraph:
 
     def submit_patient_answer(self, key: str, answer: str) -> list[dict]:
         """
-        Resume the graph after patient answers a question.
-        Stores the answer in state, clears waiting flag, and runs again.
+        Resume after patient answers. Advance questionnaire step, then continue.
+        answer is the label string selected by the patient.
         """
         if not self.state.waiting_for_patient:
             return []
 
-        # Record answer
-        self.state.answers[key] = answer
-        self.state.add_message("user", answer)
+        # Look up numeric score from score_map (for calculate_section_scores)
+        score_map = self.state.pending_question.get("score_map", {})
+        score_value = score_map.get(answer, answer)  # fallback to answer itself if not found
 
-        # Save to memory
+        # Store numeric score in answers (used for scoring)
+        self.state.answers[key] = score_value
+        self.state.add_message("user", f"{answer} (score: {score_value})")
         self.memory.save_short_term("user", answer)
 
-        # Resume graph
+        # Advance questionnaire step
+        self.state.questionnaire_step += 1
         self.state.waiting_for_patient = False
         self.state.pending_question = {}
-        self.state.next_node = NODE_REFLECTION  # always reflect after patient input
+
+        # Route: more questions or ML phase
+        if self.state.questionnaire_step < len(QUESTIONNAIRE):
+            self.state.next_node = NODE_QUESTIONNAIRE
+        else:
+            self.state.emit("agent_start", "Questionnaire complete! Moving to analysis...", "graph")
+            self.state.next_node = NODE_ML
 
         return self.run_until_pause()
 
     def initialize(self) -> list[dict]:
-        """
-        First call: run planning + memory load, then start reasoning.
-        """
+        """First call: plan → memory → start questionnaire."""
         self.state.stream_events.clear()
         self.state.next_node = NODE_PLANNER
         return self.run_until_pause()
@@ -223,6 +263,11 @@ class DiagnosticGraph:
     @property
     def confidence(self) -> float:
         return self.state.get_confidence()
+
+    @property
+    def progress(self) -> tuple[int, int]:
+        """Returns (answered, total) for progress bar."""
+        return self.state.questionnaire_step, len(QUESTIONNAIRE)
 
     def get_audit_log(self) -> list[dict]:
         return [

@@ -10,10 +10,8 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
 if not SUPABASE_URL or not SUPABASE_KEY:
-    # Use placeholder or warn for now
     print("Warning: SUPABASE_URL or SUPABASE_KEY is missing in .env")
 
-# Initialize Supabase Client
 try:
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 except Exception as e:
@@ -31,12 +29,8 @@ def get_all_patients():
 def get_patient_clinical_data(patient_id: str):
     """Fetch the latest NSS, NDS, and Gum assessments for a patient."""
     if not supabase: return {}
-    
-    # Get latest NSS
     nss_res = supabase.table("nss_assessments").select("*").eq("patient_id", patient_id).order("created_at", desc=True).limit(1).execute()
-    # Get latest NDS
     nds_res = supabase.table("nds_assessments").select("*").eq("patient_id", patient_id).order("created_at", desc=True).limit(1).execute()
-    
     return {
         "nss": nss_res.data[0] if nss_res.data else None,
         "nds": nds_res.data[0] if nds_res.data else None
@@ -53,52 +47,31 @@ def get_patient_ml_prediction(patient_id: str):
 def save_conversation_memory(patient_id: str, session_id: str, role: str, content: str, embedding: list = None):
     """Store a chat message in the long-term memory."""
     if not supabase: return None
-    
-    data = {
-        "patient_id": patient_id,
-        "session_id": session_id,
-        "role": role,
-        "content": content
-    }
-    
-    # Add embedding if generated
+    data = {"patient_id": patient_id, "session_id": session_id, "role": role, "content": content}
     if embedding:
         data["embedding"] = embedding
-        
     return supabase.table("conversation_memory").insert(data).execute()
 
 
 def save_final_decision(patient_id: str, ai_prediction: str, nds_score: int, nss_score: int, calculated_score: float, final_decision: str):
     """Save the final fused decision."""
     if not supabase: return None
-    
     data = {
-        "patient_id": patient_id,
-        "ai_prediction": ai_prediction,
-        "nds_score": nds_score,
-        "nss_score": nss_score,
-        "calculated_score": calculated_score,
-        "final_decision": final_decision
+        "patient_id": patient_id, "ai_prediction": ai_prediction,
+        "nds_score": nds_score, "nss_score": nss_score,
+        "calculated_score": calculated_score, "final_decision": final_decision
     }
     return supabase.table("final_diagnostic_decisions").insert(data).execute()
 
 
 def create_patient(name: str, age: int, gender: str, diabetes_type: str = None, diabetes_duration: int = None) -> dict:
-    """Create a new patient record and return the created row.
-    Note: patients table only has id, name, age, gender — extra fields are UI-only.
-    """
+    """Create a new patient record. Extra fields are kept in-memory only."""
     import uuid
     if not supabase:
         return {}
     new_id = str(uuid.uuid4())
-    data = {
-        "id": new_id,
-        "name": name.strip(),
-        "age": age,
-        "gender": gender,
-    }
+    data = {"id": new_id, "name": name.strip(), "age": age, "gender": gender}
     res = supabase.table("patients").insert(data).execute()
-    # Attach extra info to the returned dict (in-memory only, not persisted)
     patient = res.data[0] if res.data else {}
     if patient:
         patient["diabetes_type"] = diabetes_type

@@ -10,10 +10,10 @@ from .state import (
     NODE_FUSION, NODE_REFLECTION, NODE_REPORT, NODE_WAIT, NODE_END
 )
 from .memory import HybridMemory
-from rag_engine import call_llm
-from tools import TOOL_REGISTRY, TOOL_DESCRIPTIONS, execute_tool
-from database import get_patient_clinical_data, get_patient_ml_prediction, supabase
-from questionnaire import (
+from core.rag_engine import call_llm
+from core.tools import TOOL_REGISTRY, TOOL_DESCRIPTIONS, execute_tool
+from core.database import get_patient_clinical_data, get_patient_ml_prediction, supabase
+from core.questionnaire import (
     calculate_section_scores,
     ml_neuropathy_prediction,
     final_decision as compute_final_decision
@@ -179,11 +179,17 @@ When FUSION is done and confidence is high:
         state.log(self.name, "Reasoning step", {"iteration": state.iteration})
         state.emit("agent_start", f"Clinical reasoning (iteration {state.iteration})...", self.name)
 
-        # Build RAG context
+        # Build RAG and Episodic context
         rag_ctx = ""
         if state.long_term:
-            rag_ctx = "\nRAG Memory:\n" + "\n".join([
+            rag_ctx += "\n[RAG Conversation History]:\n" + "\n".join([
                 f"  - {r.get('content','')[:120]}" for r in state.long_term[:3]
+            ])
+            
+        if hasattr(state, 'episodic') and state.episodic:
+            rag_ctx += "\n[Past Medical History (Previous Diagnoses)]:\n" + "\n".join([
+                f"  - {r.get('created_at', '')[:10]}: {r.get('final_decision')} (NSS:{r.get('nss_score')}, NDS:{r.get('nds_score')})" 
+                for r in state.episodic[:3]
             ])
 
         # Build prompt
@@ -541,7 +547,12 @@ class ReportGeneratorAgent:
         decision_path = "\n".join(state.decision_path) or "Direct fusion computation"
         rag_context = "\n".join([
             f"  - {r.get('content','')[:80]}" for r in state.long_term[:3]
-        ]) or "No prior history"
+        ]) or "No prior conversation history"
+        
+        episodic_context = "\n".join([
+            f"  - Date: {r.get('created_at', '')[:10]} | Diagnosis: {r.get('final_decision')} | NSS: {r.get('nss_score')} | NDS: {r.get('nds_score')}" 
+            for r in state.episodic[:3]
+        ]) or "No previous diagnoses on record."
 
         prompt = f"""Generate a comprehensive, patient-friendly medical diagnostic report in English.
 
@@ -568,6 +579,9 @@ Decision Path: {decision_path}
 === RAG MEMORY CONTEXT ===
 {rag_context}
 
+=== PAST MEDICAL HISTORY (PREVIOUS DIAGNOSES) ===
+{episodic_context}
+
 === REASONING ITERATIONS ===
 Total iterations: {state.iteration}
 Tools called: {len([e for e in state.audit_log if 'Executing' in e.action])}
@@ -578,9 +592,10 @@ Write the final report with:
 3. 🦷 Gum Health Assessment
 4. 🩹 Foot Ulcer Risk Assessment
 5. 📊 Decision Explanation (how the score was computed, in simple terms)
-6. 🔍 Uncertainty Note (what we are not certain about)
-7. 📌 Recommendations (4-5 bullet points)
-8. 🚨 Disclaimer: This is AI-assisted analysis only. Always consult a certified physician."""
+6. ⏳ Medical History Comparison (Briefly compare current state with past diagnoses if available)
+7. 🔍 Uncertainty Note (what we are not certain about)
+8. 📌 Recommendations (4-5 bullet points)
+9. 🚨 Disclaimer: This is AI-assisted analysis only. Always consult a certified physician."""
 
         report = call_llm(prompt)
         state.final_report = report

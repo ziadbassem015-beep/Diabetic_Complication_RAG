@@ -54,6 +54,7 @@ class MultiAgentState:
 
     # ── Clinical Data ──────────────────────────────────────────────
     answers: dict = field(default_factory=dict)              # patient questionnaire answers
+    questionnaire_step: int = 0                              # current question index
     clinical_scores: dict = field(default_factory=dict)      # NSS, NDS, Gum, Ulcer
     ml_results: dict = field(default_factory=dict)           # ML prediction output
     fusion_results: dict = field(default_factory=dict)       # final weighted decision
