@@ -11,13 +11,8 @@ from .state import (
 )
 from .memory import HybridMemory
 from core.rag_engine import call_llm
+from core.services.diagnostic_service import DiagnosticService
 from core.tools import TOOL_REGISTRY, TOOL_DESCRIPTIONS, execute_tool
-from core.database import get_patient_clinical_data, get_patient_ml_prediction, supabase
-from core.questionnaire import (
-    calculate_section_scores,
-    ml_neuropathy_prediction,
-    final_decision as compute_final_decision
-)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -331,7 +326,7 @@ class MLInferenceAgent:
 
         # Try loading stored prediction first
         try:
-            stored = get_patient_ml_prediction(state.patient_id)
+            stored = DiagnosticService.get_ml_prediction(state.patient_id)
             if stored and stored.get("predicted_class") is not None:
                 state.ml_results = {
                     "predicted_class": stored["predicted_class"],
@@ -348,29 +343,15 @@ class MLInferenceAgent:
             pass
 
         # Compute from answers
-        scores = calculate_section_scores(state.answers)
-        nss = scores.get("nss_score", 0)
+        nss = state.clinical_scores.get("nss_score", 0)
         age = state.patient_info.get("age", 50)
-
-        result = ml_neuropathy_prediction(state.answers, nss, age)
+        result = DiagnosticService.run_ml_inference(
+            patient_id=state.patient_id,
+            answers=state.answers,
+            nss_score=nss,
+            age=age,
+        )
         state.ml_results = {**result, "source": "computed"}
-
-        # Persist to DB
-        try:
-            f = result.get("features", {})
-            supabase.table("ml_neuropathy_predictions").insert({
-                "patient_id": state.patient_id,
-                "nss_score": f.get("nss", nss),
-                "bmi_baseline": f.get("bmi", 22),
-                "age_baseline": f.get("age", age),
-                "hba1c_baseline": f.get("hba1c", 7),
-                "heat_avg": (f.get("heat_right", 38) + f.get("heat_left", 38)) / 2,
-                "cold_avg": (f.get("cold_right", 20) + f.get("cold_left", 20)) / 2,
-                "predicted_class": result["predicted_class"],
-                "predicted_probability": result["predicted_probability"]
-            }).execute()
-        except Exception:
-            pass
 
         state.emit("ml_result",
             f"ML computed: class={result['predicted_class']}, prob={result['predicted_probability']:.2f} ({result['ai_prediction']})",
@@ -393,20 +374,25 @@ class FusionDecisionAgent:
 
         ai_pred = state.ml_results.get("ai_prediction", "سليم")
 
-        # Get scores from clinical_scores or recompute
+        # Get scores from clinical_scores or recompute via service
         if state.clinical_scores.get("nds_score") is not None:
             nds = state.clinical_scores["nds_score"]
             nss = state.clinical_scores.get("nss_score", 0)
         else:
-            scores = calculate_section_scores(state.answers)
-            nds = scores["nds_score"]
-            nss = scores["nss_score"]
-            gum = scores["gum_score"]
-            ulcer = scores["ulcer_score"]
+            scores = DiagnosticService.save_clinical_data(state.patient_id, state.answers)
+            nds = scores.get("nds_score", 0)
+            nss = scores.get("nss_score", 0)
+            gum = scores.get("gum_score", 0)
+            ulcer = scores.get("ulcer_score", 0)
             state.clinical_scores.update({"nss_score": nss, "nds_score": nds,
                                           "gum_score": gum, "ulcer_score": ulcer})
 
-        result = compute_final_decision(ai_pred, nds, nss)
+        result = DiagnosticService.compute_fusion(
+            patient_id=state.patient_id,
+            ai_prediction=ai_pred,
+            nds_score=nds,
+            nss_score=nss,
+        )
         state.fusion_results = result
         state.confidence = result["fusion_score"] / 3.1  # max possible = 3.1
 
@@ -415,19 +401,6 @@ class FusionDecisionAgent:
             f"AI({ai_pred})×1.0 + NDS({nds}≥6:{result['nds_binary']})×1.2 + NSS({nss}≥5:{result['nss_binary']})×0.9"
             f" = {result['fusion_score']} → {result['final_decision']}"
         )
-
-        # Save to DB
-        try:
-            supabase.table("final_diagnostic_decisions").insert({
-                "patient_id": state.patient_id,
-                "ai_prediction": ai_pred,
-                "nds_score": nds,
-                "nss_score": nss,
-                "calculated_score": result["fusion_score"],
-                "final_decision": result["final_decision"]
-            }).execute()
-        except Exception:
-            pass
 
         state.emit("fusion",
             f"Fusion score: {result['fusion_score']:.2f} / threshold {result['threshold']} → {result['final_decision']} ({result['confidence']} confidence)",

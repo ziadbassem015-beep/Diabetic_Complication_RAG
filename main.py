@@ -1,14 +1,14 @@
 import uuid
 import sys
 from dotenv import load_dotenv
-from core.database import get_all_patients, save_conversation_memory, supabase
+from core.services.diagnostic_service import DiagnosticService
 from core.rag_engine import run_diagnostic_pipeline, generate_embedding
 
 load_dotenv()
 
 def select_patient():
     """Let user pick or create a patient."""
-    patients = get_all_patients()
+    patients = DiagnosticService.get_all_patients()
     
     print("\n" + "="*55)
     print("   🩺 AI Diagnostic System - Diabetic Neuropathy")
@@ -47,14 +47,11 @@ def create_patient():
     gender = input("Gender (Male/Female): ").strip() or "Not specified"
     
     new_id = str(uuid.uuid4())
-    result = supabase.table("patients").insert({
-        "id": new_id,
-        "name": name,
-        "age": age,
-        "gender": gender
-    }).execute()
-    
-    patient = result.data[0]
+    patient = DiagnosticService.create_new_patient(
+        name=name,
+        age=age,
+        gender=gender,
+    )
     print(f"\n✅ Patient created: {patient['name']}")
     return patient
 
@@ -96,7 +93,7 @@ def run_chat(patient: dict):
         # Save user message
         chat_history.append({"role": "user", "content": current_input})
         user_emb = generate_embedding(current_input)
-        save_conversation_memory(patient_id, session_id, "user", current_input, user_emb if user_emb else None)
+        DiagnosticService.store_memory(patient_id, session_id, "user", current_input, user_emb if user_emb else None)
         
         print("\n⏳ Analyzing...")
         
@@ -114,7 +111,7 @@ def run_chat(patient: dict):
         # Save assistant message
         chat_history.append({"role": "assistant", "content": message})
         asst_emb = generate_embedding(message)
-        save_conversation_memory(patient_id, session_id, "assistant", message, asst_emb if asst_emb else None)
+        DiagnosticService.store_memory(patient_id, session_id, "assistant", message, asst_emb if asst_emb else None)
         
         # Display AI message
         print("\n🤖 AI System:")

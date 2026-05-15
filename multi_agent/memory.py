@@ -4,7 +4,7 @@ Manages short-term (conversation), long-term (RAG/Supabase), and episodic (past 
 """
 from typing import Any
 from core.rag_engine import generate_embedding
-from core.database import save_conversation_memory, supabase
+from core.services.diagnostic_service import DiagnosticService
 
 
 class HybridMemory:
@@ -17,10 +17,10 @@ class HybridMemory:
 
     # ── Short-term Memory ──────────────────────────────────────────
     def save_short_term(self, role: str, content: str) -> None:
-        """Persist a chat message to Supabase conversation_memory."""
+        """Persist a chat message to the memory repository."""
         try:
             emb = self._get_embedding(content)
-            save_conversation_memory(
+            DiagnosticService.store_memory(
                 self.patient_id,
                 self.session_id,
                 role,
@@ -32,18 +32,9 @@ class HybridMemory:
 
     # ── Long-term RAG Memory ───────────────────────────────────────
     def search_long_term(self, query: str, limit: int = 5) -> list[dict]:
-        """Vector similarity search in Supabase conversation_memory."""
-        emb = self._get_embedding(query)
-        if not emb:
-            return []
+        """Vector similarity search through the service layer."""
         try:
-            res = supabase.rpc("match_memory", {
-                "query_embedding": emb,
-                "match_threshold": 0.45,
-                "match_count": limit,
-                "p_patient_id": self.patient_id
-            }).execute()
-            return res.data or []
+            return DiagnosticService.retrieve_memory(self.patient_id, query, limit)
         except Exception as e:
             print(f"[Memory] RAG search failed: {e}")
             return []
@@ -52,13 +43,7 @@ class HybridMemory:
     def load_episodic(self) -> list[dict]:
         """Load past diagnostic decisions for this patient."""
         try:
-            res = supabase.table("final_diagnostic_decisions") \
-                .select("*") \
-                .eq("patient_id", self.patient_id) \
-                .order("created_at", desc=True) \
-                .limit(5) \
-                .execute()
-            return res.data or []
+            return DiagnosticService.get_recent_decisions(self.patient_id)
         except Exception as e:
             print(f"[Memory] Episodic load failed: {e}")
             return []

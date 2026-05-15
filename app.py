@@ -4,7 +4,7 @@ Drives the DiagnosticGraph and streams intermediate agent events to the UI.
 """
 import streamlit as st
 import uuid
-from core.database import get_all_patients, supabase, create_patient
+from core.services.diagnostic_service import DiagnosticService
 from multi_agent import DiagnosticGraph, MultiAgentState
 
 st.set_page_config(
@@ -136,7 +136,7 @@ if not st.session_state.patient_selected:
                 else:
                     with st.spinner("Creating your profile..."):
                         try:
-                            patient = create_patient(
+                            patient = DiagnosticService.create_new_patient(
                                 name=name,
                                 age=int(age),
                                 gender=gender,
@@ -157,7 +157,7 @@ if not st.session_state.patient_selected:
         st.markdown("### 🔄 Existing Patient")
         st.caption("Continue with a previously registered profile.")
 
-        patients = get_all_patients()
+        patients = DiagnosticService.get_all_patients()
         if patients:
             patient_map = {
                 f"{p['name']} — Age {p.get('age','?')} ({p.get('gender','')})": p
@@ -168,13 +168,9 @@ if not st.session_state.patient_selected:
 
             # Show last session info if available
             try:
-                last_dec = supabase.table("final_diagnostic_decisions") \
-                    .select("final_decision, created_at") \
-                    .eq("patient_id", selected["id"]) \
-                    .order("created_at", desc=True).limit(1).execute()
-                if last_dec.data:
-                    d = last_dec.data[0]
-                    st.info(f"**Last result:** {d['final_decision']}  \n`{d['created_at'][:10]}`")
+                last_dec = DiagnosticService.load_patient_context(selected["id"]).get("latest_decision", {})
+                if last_dec and last_dec.get("final_decision"):
+                    st.info(f"**Last result:** {last_dec['final_decision']}  \n`{last_dec['created_at'][:10]}`")
             except Exception:
                 pass
 

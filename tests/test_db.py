@@ -1,42 +1,46 @@
 """
-test_db.py — Quick test to verify Supabase connection and table row counts.
-Run with: uv run python test_db.py
+test_db.py — Repository-based connectivity and schema validation test.
+Run with: python test_db.py
 """
+
 from dotenv import load_dotenv
 load_dotenv()
-from database import supabase, get_all_patients
+
+from core.repositories.patient_repo import PatientRepository
+from core.repositories.clinical_repo import ClinicalRepository
+from core.repositories.ml_repo import MLRepository
+from core.repositories.decision_repo import DecisionRepository
 
 print("=" * 45)
-print("   Supabase Connection Test")
+print("   Repository Connectivity Test")
 print("=" * 45)
 
 # Test 1: Patients
-patients = get_all_patients()
-print(f"\nPatients in DB: {len(patients)}")
-for p in patients:
-    print(f"  - {p['name']} | age: {p.get('age')} | id: {p['id'][:8]}...")
+try:
+    patients = PatientRepository.get_all_patients()
+    print(f"\nPatients in DB: {len(patients)}")
+    for p in patients[:10]:
+        print(
+            f"  - {p.get('name', 'Unknown')} | "
+            f"age: {p.get('age', '?')} | "
+            f"id: {str(p.get('id', ''))[:8]}..."
+        )
+except Exception as e:
+    print(f"[ERROR] PatientRepository failure: {e}")
+    exit(1)
 
-# Test 2: Table row counts
-tables = [
-    "nss_assessments",
-    "nds_assessments",
-    "gum_assessments",
-    "ulcer_assessments",
-    "ml_neuropathy_predictions",
-    "final_diagnostic_decisions",
-    "conversation_memory",
-]
-
-print("\nTable Row Counts:")
-for t in tables:
-    try:
-        res = supabase.table(t).select("id", count="exact").execute()
-        print(f"  [OK] {t}: {res.count} rows")
-    except Exception as e:
-        print(f"  [ERR] {t}: {e}")
+# Test 2: Repository access checks
+try:
+    clinical = ClinicalRepository.get_clinical_data("00000000-0000-0000-0000-000000000000")
+    print(f"\nClinical data keys: {list(clinical.keys())}")
+    ml = MLRepository.get_ml_prediction("00000000-0000-0000-0000-000000000000")
+    print(f"ML prediction keys: {list(ml.keys()) if isinstance(ml, dict) else type(ml)}")
+    decisions = DecisionRepository.get_decisions("00000000-0000-0000-0000-000000000000")
+    print(f"Decision records returned: {len(decisions)}")
+except Exception as e:
+    print(f"[ERROR] Repository access failed: {e}")
+    exit(1)
 
 print("\n" + "=" * 45)
-print("If all tables show [OK], your DB is connected!")
-print("Results are saved automatically after answering")
-print("all 34 questions in the Streamlit app.")
+print("Repository connectivity check completed.")
 print("=" * 45)

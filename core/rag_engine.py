@@ -1,9 +1,7 @@
 import os
 import json
-import requests
 from openai import OpenAI
 from dotenv import load_dotenv
-from core.database import get_patient_clinical_data, get_patient_ml_prediction, supabase
 
 load_dotenv()
 
@@ -46,19 +44,9 @@ def generate_embedding(text: str) -> list:
 
 def search_memory(patient_id: str, query: str, limit: int = 5):
     """Retrieve relevant past conversations using vector similarity."""
-    if not supabase:
-        return []
-    query_embedding = generate_embedding(query)
-    if not query_embedding:
-        return []
     try:
-        response = supabase.rpc("match_memory", {
-            "query_embedding": query_embedding,
-            "match_threshold": 0.5,
-            "match_count": limit,
-            "p_patient_id": patient_id
-        }).execute()
-        return response.data
+        from core.services.diagnostic_service import DiagnosticService
+        return DiagnosticService.retrieve_memory(patient_id, query, limit)
     except Exception as e:
         print(f"Memory search error: {e}")
         return []
@@ -89,15 +77,17 @@ def run_diagnostic_pipeline(patient_id: str, user_query: str, chat_history: list
     if chat_history is None:
         chat_history = []
 
+    from core.services.diagnostic_service import DiagnosticService
+
     # 1. Fetch clinical data
-    clinical_data = get_patient_clinical_data(patient_id)
+    clinical_data = DiagnosticService.get_clinical_data(patient_id)
     nss_record = clinical_data.get("nss")
     nds_record = clinical_data.get("nds")
     nss_score = nss_record["total_score"] if nss_record else 0
     nds_score = nds_record["total_score"] if nds_record else 0
 
     # 2. Fetch ML prediction
-    ml_record = get_patient_ml_prediction(patient_id)
+    ml_record = DiagnosticService.get_ml_prediction(patient_id)
     ml_prob = ml_record["predicted_probability"] if ml_record else 0.0
     ml_class = ml_record["predicted_class"] if ml_record else 0
 
