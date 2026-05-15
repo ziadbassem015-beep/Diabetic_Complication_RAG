@@ -1,177 +1,180 @@
-# Supabase CLI
+# Multi-Agent Medical Diagnostic System
 
-[![Coverage Status](https://coveralls.io/repos/github/supabase/cli/badge.svg?branch=develop)](https://coveralls.io/github/supabase/cli?branch=develop) [![Bitbucket Pipelines](https://img.shields.io/bitbucket/pipelines/supabase-cli/setup-cli/master?style=flat-square&label=Bitbucket%20Canary)](https://bitbucket.org/supabase-cli/setup-cli/pipelines) [![Gitlab Pipeline Status](https://img.shields.io/gitlab/pipeline-status/sweatybridge%2Fsetup-cli?label=Gitlab%20Canary)
-](https://gitlab.com/sweatybridge/setup-cli/-/pipelines)
+## Project Overview
 
-[Supabase](https://supabase.io) is an open source Firebase alternative. We're building the features of Firebase using enterprise-grade open source tools.
+This repository implements a production-style medical diagnostic system for diabetic complications, built using Streamlit, Supabase, a multi-agent orchestration graph, RAG memory retrieval, and a heuristic ML inference pipeline.
 
-This repository contains all the functionality for Supabase CLI.
+The application supports patient onboarding, symptom collection, neuropathy and oral health assessment, long-term memory retrieval, model-assisted prediction, fusion decision scoring, and structured report generation.
 
-- [x] Running Supabase locally
-- [x] Managing database migrations
-- [x] Creating and deploying Supabase Functions
-- [x] Generating types directly from your database schema
-- [x] Making authenticated HTTP requests to [Management API](https://supabase.com/docs/reference/api/introduction)
+## Architecture Overview
 
-## Getting started
+The system follows a layered architecture that separates presentation, business logic, persistence, and AI orchestration.
 
-### Install the CLI
+### Layers
 
-Available via [NPM](https://www.npmjs.com) as dev dependency. To install:
+- **UI Layer**: pp.py provides the Streamlit presentation layer for patient selection, questionnaire flow, agent event streaming, and final report display.
+- **Service Layer**: core/services/diagnostic_service.py orchestrates the main business logic, exposing a clean boundary between UI/agents and repository persistence.
+- **Repository Layer**: core/repositories/* implements data access for patients, clinical assessments, ML predictions, RAG memory, and final decisions.
+- **Database Layer**: core/database/client.py encapsulates Supabase client initialization and environment-based configuration.
 
-```bash
-npm i supabase --save-dev
-```
+### Data Flow
 
-When installing with yarn 4, you need to disable experimental fetch with the following nodejs config.
+The normal data flow is:
 
-```
-NODE_OPTIONS=--no-experimental-fetch yarn add supabase
-```
+1. UI captures patient input.
+2. UI calls service methods in DiagnosticService.
+3. Service methods call repository classes.
+4. Repositories use core/database/client.py to access Supabase.
 
-> **Note**
-For Bun versions below v1.0.17, you must add `supabase` as a [trusted dependency](https://bun.sh/guides/install/trusted) before running `bun add -D supabase`.
+This ensures that database operations are centralized and there is no direct Supabase access from the UI or agents.
 
-<details>
-  <summary><b>macOS</b></summary>
+## Multi-Agent System
 
-  Available via [Homebrew](https://brew.sh). To install:
+The multi-agent architecture is implemented in multi_agent/graph.py, multi_agent/agents.py, multi_agent/state.py, and multi_agent/memory.py.
 
-  ```sh
-  brew install supabase/tap/supabase
-  ```
+### Agent Roles
 
-  To install the beta release channel:
-  
-  ```sh
-  brew install supabase/tap/supabase-beta
-  brew link --overwrite supabase-beta
-  ```
-  
-  To upgrade:
+- **PlannerAgent**: creates a diagnostic plan based on available patient data and memory.
+- **MemoryRAGAgent**: retrieves long-term patient memory from the RAG store and loads episodic history.
+- **ClinicalReasoningAgent**: decides the next action in a ReAct loop using tool descriptions and state.
+- **ToolNode**: executes registered tool actions and writes observations back to shared state.
+- **MLInferenceAgent**: loads stored ML predictions or computes a new neuropathy inference based on questionnaire answers.
+- **FusionDecisionAgent**: computes the final diagnostic decision using weighted AI and clinical scores.
+- **ReflectionAgent**: validates reasoning consistency and suggests whether to replan or continue.
+- **ReportGeneratorAgent**: generates the final structured narrative report for the patient.
 
-  ```sh
-  brew upgrade supabase
-  ```
-</details>
+### Graph Execution Flow
 
-<details>
-  <summary><b>Windows</b></summary>
+The graph enforces a strict sequence of phases:
 
-  Available via [Scoop](https://scoop.sh). To install:
+1. Planner → 2. Memory → 3. Questionnaire → 4. ML → 5. Fusion → 6. Reflection → 7. Report → END
 
-  ```powershell
-  scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
-  scoop install supabase
-  ```
+The graph pauses whenever patient input is required and resumes once the answer is submitted.
 
-  To upgrade:
+## Features
 
-  ```powershell
-  scoop update supabase
-  ```
-</details>
+- **Patient Management**: new patient registration and existing patient selection.
+- **Diagnostic Workflow**: multi-step questionnaire spanning symptom scoring and clinical assessment.
+- **ML Inference**: neuropathy prediction logic based on questionnaire-derived features.
+- **RAG Memory**: long-term semantic retrieval of previous patient conversation memory.
+- **Fusion Decision Engine**: weighted combination of AI output and clinical scores.
+- **Final Report Generation**: structured patient-facing diagnostic summary.
+- **CLI Alternative**: main.py provides a command-line interface for interaction.
 
-<details>
-  <summary><b>Linux</b></summary>
+## Database Schema Overview
 
-  Available via [Homebrew](https://brew.sh) and Linux packages.
+The Supabase schema includes the following tables:
 
-  #### via Homebrew
+- patients
+- 
+ss_assessments
+- 
+ds_assessments
+- gum_assessments
+- ulcer_assessments
+- ml_neuropathy_predictions
+- inal_diagnostic_decisions
+- conversation_memory
+- knowledge_base
 
-  To install:
+The system also defines a match_memory stored procedure for vector similarity retrieval.
 
-  ```sh
-  brew install supabase/tap/supabase
-  ```
+## Setup Instructions
 
-  To upgrade:
+1. Install Python dependencies:
 
-  ```sh
-  brew upgrade supabase
-  ```
+`ash
+pip install -r requirements.txt
+`
 
-  #### via Linux packages
+2. Create a .env file with the following values:
 
-  Linux packages are provided in [Releases](https://github.com/supabase/cli/releases). To install, download the `.apk`/`.deb`/`.rpm`/`.pkg.tar.zst` file depending on your package manager and run the respective commands.
+`ini
+SUPABASE_URL=<your_supabase_url>
+SUPABASE_KEY=<your_supabase_key>
+OPENAI_API_KEY=<your_openai_api_key>
+OPENAI_BASE_URL=<optional_openai_base_url>
+`
 
-  ```sh
-  sudo apk add --allow-untrusted <...>.apk
-  ```
+3. Run the Streamlit application:
 
-  ```sh
-  sudo dpkg -i <...>.deb
-  ```
+`ash
+streamlit run app.py
+`
 
-  ```sh
-  sudo rpm -i <...>.rpm
-  ```
+4. For CLI interaction, run:
 
-  ```sh
-  sudo pacman -U <...>.pkg.tar.zst
-  ```
-</details>
+`ash
+python main.py
+`
 
-<details>
-  <summary><b>Other Platforms</b></summary>
+## Project Structure
 
-  You can also install the CLI via [go modules](https://go.dev/ref/mod#go-install) without the help of package managers.
+`	ext
+.
+├── app.py
+├── main.py
+├── database.py
+├── rag_engine.py
+├── core
+│   ├── database
+│   │   ├── client.py
+│   │   └── __init__.py
+│   ├── repositories
+│   │   ├── clinical_repo.py
+│   │   ├── decision_repo.py
+│   │   ├── memory_repo.py
+│   │   ├── ml_repo.py
+│   │   ├── patient_repo.py
+│   │   └── __init__.py
+│   ├── services
+│   │   ├── diagnostic_service.py
+│   │   └── __init__.py
+│   ├── tools.py
+│   ├── rag_engine.py
+│   ├── questionnaire.py
+│   └── __init__.py
+├── multi_agent
+│   ├── agents.py
+│   ├── graph.py
+│   ├── memory.py
+│   ├── state.py
+│   └── __init__.py
+├── database
+│   └── schema.sql
+├── tests
+│   └── test_db.py
+├── requirements.txt
+└── README.md
+`
 
-  ```sh
-  go install github.com/supabase/cli@latest
-  ```
+## Architecture Rules
 
-  Add a symlink to the binary in `$PATH` for easier access:
+- No direct database access outside repository classes.
+- UI code in pp.py and main.py is presentation and orchestration only.
+- Agents invoke the service layer and tools, but do not interact with Supabase directly.
+- core/database/client.py is the only centralized Supabase client initializer.
+- DiagnosticService is the business boundary between UI/agents and persistence.
 
-  ```sh
-  ln -s "$(go env GOPATH)/bin/cli" /usr/bin/supabase
-  ```
+## Developer Guide
 
-  This works on other non-standard Linux distros.
-</details>
+### Safe modification areas
 
-<details>
-  <summary><b>Community Maintained Packages</b></summary>
+- **pp.py**: update Streamlit UI and session presentation.
+- **core/services/diagnostic_service.py**: update business orchestration and persistence coordination.
+- **core/repositories/***: update Supabase data access logic and table mapping.
+- **core/tools.py**: extend agent-accessible tools and observations.
+- **multi_agent/***: modify agent behavior, graph routing, and state flow.
+- **core/rag_engine.py**: update LLM prompts, embedding generation, and RAG retrieval logic.
+- **core/questionnaire.py**: update questionnaire content and scoring logic.
 
-  Available via [pkgx](https://pkgx.sh/). Package script [here](https://github.com/pkgxdev/pantry/blob/main/projects/supabase.com/cli/package.yml).
-  To install in your working directory:
+### Where NOT to touch
 
-  ```bash
-  pkgx install supabase
-  ```
+- core/database/client.py: only change if Supabase connection configuration must be adjusted.
+- database.py: legacy compatibility shim; avoid modifying it unless compatibility behavior changes.
+- 	ests/test_db.py: repository connectivity validation only.
+- generated or runtime artifacts, including __pycache__ directories.
 
-  Available via [Nixpkgs](https://nixos.org/). Package script [here](https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/tools/supabase-cli/default.nix).
-</details>
+## Notes
 
-### Run the CLI
-
-```bash
-supabase bootstrap
-```
-
-Or using npx:
-
-```bash
-npx supabase bootstrap
-```
-
-The bootstrap command will guide you through the process of setting up a Supabase project using one of the [starter](https://github.com/supabase-community/supabase-samples/blob/main/samples.json) templates.
-
-## Docs
-
-Command & config reference can be found [here](https://supabase.com/docs/reference/cli/about).
-
-## Breaking changes
-
-We follow semantic versioning for changes that directly impact CLI commands, flags, and configurations.
-
-However, due to dependencies on other service images, we cannot guarantee that schema migrations, seed.sql, and generated types will always work for the same CLI major version. If you need such guarantees, we encourage you to pin a specific version of CLI in package.json.
-
-## Developing
-
-To run from source:
-
-```sh
-# Go >= 1.22
-go run . help
-```
+This README is generated from the current repository contents and reflects the existing system architecture, data flow, and agent orchestration.
