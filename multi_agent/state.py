@@ -16,6 +16,7 @@ NODE_ML          = "ml_node"
 NODE_FUSION      = "fusion_node"
 NODE_REFLECTION  = "reflection_node"
 NODE_REPORT      = "report_node"
+NODE_SECONDARY   = "secondary_assessment_node"
 NODE_WAIT        = "patient_wait"
 NODE_END         = "END"
 
@@ -58,6 +59,10 @@ class MultiAgentState:
     clinical_scores: dict = field(default_factory=dict)      # NSS, NDS, Gum, Ulcer
     ml_results: dict = field(default_factory=dict)           # ML prediction output
     fusion_results: dict = field(default_factory=dict)       # final weighted decision
+    gestational_results: dict = field(default_factory=dict)
+    heart_risk_results: dict = field(default_factory=dict)
+    secondary_assessments_complete: bool = False
+    skipped_assessments: list = field(default_factory=list)
 
     # ── Agent Planning ─────────────────────────────────────────────
     plan: list[str] = field(default_factory=list)

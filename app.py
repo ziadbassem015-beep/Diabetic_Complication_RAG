@@ -5,6 +5,7 @@ Drives the DiagnosticGraph and streams intermediate agent events to the UI.
 import streamlit as st
 import uuid
 from core.services.diagnostic_service import DiagnosticService
+from core.questionnaire import QUESTIONNAIRE, get_eligible_questions
 from multi_agent import DiagnosticGraph, MultiAgentState
 
 st.set_page_config(
@@ -196,6 +197,14 @@ with st.sidebar:
     st.markdown(f"**Patient:** {selected_patient['name']}")
     st.caption(f"Age: {selected_patient.get('age','?')} | {selected_patient.get('gender','')}")
 
+    _eligible_preview = get_eligible_questions(QUESTIONNAIRE, selected_patient)
+    _gd_note = (
+        "Gestational screening: included"
+        if selected_patient.get("gender") == "Female"
+        else "Gestational screening: skipped (male patient)"
+    )
+    st.caption(f"Eligible questions: {len(_eligible_preview)} | {_gd_note}")
+
     if st.button("↩ Switch Patient", use_container_width=True):
         st.session_state.patient_selected = False
         st.session_state.patient = None
@@ -221,6 +230,14 @@ with st.sidebar:
         c2.metric("Confidence", f"{g_side.confidence:.0%}")
         c1.metric("Answers", len(s.answers))
         c2.metric("Reflections", s.reflection_count)
+        answered, total = g_side.progress
+        st.progress(min(answered / max(total, 1), 1.0), text=f"Questionnaire {answered}/{total}")
+        sec_status = "✅ Done" if s.secondary_assessments_complete else (
+            "⏳ Pending" if s.has_fusion() else "—"
+        )
+        st.caption(f"Secondary assessments (GD + Heart Risk): {sec_status}")
+        if s.skipped_assessments:
+            st.caption(f"Skipped: {', '.join(s.skipped_assessments)}")
         if s.plan:
             st.markdown("**Plan:**")
             for i, step in enumerate(s.plan, 1):
@@ -239,6 +256,8 @@ with st.sidebar:
         "[Reflection] ─────┘\n"
         "    ↓\n"
         "  [ML] → [Fusion]\n"
+        "    ↓\n"
+        " [Secondary GD/HR]\n"
         "    ↓\n"
         " [Report] → END",
         language=None
@@ -290,6 +309,9 @@ def render_event(ev: dict):
 
     elif ev_type == "fusion":
         st.success(f"📊 {content}")
+
+    elif ev_type == "secondary":
+        st.info(f"🩺 Secondary: {content}")
 
     elif ev_type == "reflection":
         st.markdown(f'{badge} {content}', unsafe_allow_html=True)
@@ -379,6 +401,12 @@ elif g and not g.is_waiting and not g.is_complete and st.session_state.started:
 elif not st.session_state.started:
     st.markdown("### Ready to begin the diagnostic session?")
     st.markdown("The agent system will autonomously plan, reason, collect data, and generate a medical report.")
+
+    _eligible = get_eligible_questions(QUESTIONNAIRE, selected_patient)
+    if selected_patient.get("gender") == "Male":
+        st.info("Gestational diabetes questions are excluded for male patients. Heart risk screening is included for all patients.")
+    else:
+        st.info(f"This session includes {len(_eligible)} questions (neuropathy, gum, ulcer, ML, gestational, and heart risk).")
 
     if st.button("🚀 Launch Multi-Agent Diagnostic Session", type="primary", use_container_width=True):
         with st.spinner("🧠 Initializing agents and planning session..."):

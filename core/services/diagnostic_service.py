@@ -8,8 +8,15 @@ from core.repositories.decision_repo import DecisionRepository
 from core.questionnaire import (
     calculate_section_scores,
     ml_neuropathy_prediction,
-    final_decision
+    final_decision,
+    ml_gestational_prediction,
+    ml_heart_risk_prediction,
+    calculate_gestational_score,
+    calculate_heart_risk_score,
+    get_eligible_questions,
 )
+from core.repositories.gestational_repo import GestationalRepository
+from core.repositories.heart_risk_repo import HeartRiskRepository
 
 logger = logging.getLogger(__name__)
 
@@ -124,3 +131,149 @@ class DiagnosticService:
     def create_new_patient(name: str, age: int, gender: str, diabetes_type: Optional[str] = None, diabetes_duration: Optional[int] = None) -> Dict[str, Any]:
         """Creates a new patient."""
         return PatientRepository.create_patient(name, age, gender, diabetes_type, diabetes_duration)
+
+    # ═══════════════════════════════════════════════════════════════
+    # GESTATIONAL DIABETES ASSESSMENT METHODS (NEW)
+    # ═══════════════════════════════════════════════════════════════
+
+    @staticmethod
+    def save_gestational_assessment(patient_id: str, answers: Dict[str, Any], patient_info: Dict[str, Any]) -> Dict[str, Any]:
+        """Computes gestational diabetes risk score and saves it to DB."""
+        # Only process for female patients
+        if patient_info.get("gender") != "Female":
+            return {"error": "Gestational diabetes assessment only applicable for female patients"}
+        
+        gd_scores = calculate_gestational_score(answers)
+        bmi = float(answers.get("gd_bmi", patient_info.get("bmi", 25)))
+        pregnancy_week = int(answers.get("gd_pregnancy_week", 0))
+        glucose_level = float(answers.get("gd_fasting_glucose", 0) * 30)  # Convert score to mg/dL estimate
+        fasting_glucose = float(answers.get("gd_fasting_glucose", 0) * 30)
+        insulin_resistance = float(answers.get("gd_bmi", 25) / 10.0)  # Proxy for insulin resistance
+        family_history = bool(answers.get("gd_family_history", 0) > 0)
+        
+        # Run ML prediction
+        ml_result = ml_gestational_prediction(answers, gd_scores["gd_score"], bmi, patient_info.get("age", 25))
+        
+        # Save to database
+        db_result = GestationalRepository.save_gestational_assessment(
+            patient_id=patient_id,
+            pregnancy_week=pregnancy_week,
+            glucose_level=glucose_level,
+            fasting_glucose=fasting_glucose,
+            insulin_resistance=insulin_resistance,
+            bmi=bmi,
+            family_history=family_history,
+            risk_score=ml_result["predicted_probability"],
+            predicted_class=ml_result["predicted_class"],
+            predicted_probability=ml_result["predicted_probability"],
+        )
+        
+        return {
+            "gd_scores": gd_scores,
+            "ml_result": ml_result,
+            "db_result": db_result,
+        }
+
+    @staticmethod
+    def get_gestational_assessment(patient_id: str) -> Dict[str, Any]:
+        """Fetch the latest gestational diabetes assessment for a patient."""
+        return GestationalRepository.get_gestational_assessment(patient_id)
+
+    @staticmethod
+    def get_gestational_history(patient_id: str, limit: int = 5) -> list:
+        """Fetch gestational diabetes assessment history for a patient."""
+        return GestationalRepository.get_gestational_history(patient_id, limit)
+
+    # ═══════════════════════════════════════════════════════════════
+    # HEART RISK ASSESSMENT METHODS (NEW)
+    # ═══════════════════════════════════════════════════════════════
+
+    @staticmethod
+    def save_heart_risk_assessment(patient_id: str, answers: Dict[str, Any], patient_info: Dict[str, Any]) -> Dict[str, Any]:
+        """Computes heart risk score and saves it to DB."""
+        hr_scores = calculate_heart_risk_score(answers)
+        
+        # Extract heart risk features
+        cholesterol = float(answers.get("hr_cholesterol", 0) * 60 + 150)  # Convert score to mg/dL estimate
+        bp_score = int(answers.get("hr_blood_pressure", 0))
+        blood_pressure_systolic = float(120 + bp_score * 15)  # Estimate systolic
+        blood_pressure_diastolic = float(80 + bp_score * 10)  # Estimate diastolic
+        resting_heart_rate = int(60 + answers.get("hr_resting_heart_rate", 0) * 15)
+        smoking_status = {0: "Never", 1: "Former (>1y)", 2: "Former (<1y)", 3: "Current"}.get(answers.get("hr_smoking_status", 0), "Unknown")
+        bmi = float(answers.get("hr_bmi", patient_info.get("bmi", 25)))
+        exercise_frequency = int(answers.get("hr_exercise_frequency", 0))
+        diabetes_duration = int(patient_info.get("diabetes_duration", 0))
+        
+        # Run ML prediction
+        ml_result = ml_heart_risk_prediction(
+            answers,
+            hr_scores["hr_score"],
+            patient_info.get("age", 50),
+            diabetes_duration
+        )
+        
+        # Save to database
+        db_result = HeartRiskRepository.save_heart_risk_assessment(
+            patient_id=patient_id,
+            cholesterol=cholesterol,
+            blood_pressure_systolic=blood_pressure_systolic,
+            blood_pressure_diastolic=blood_pressure_diastolic,
+            resting_heart_rate=resting_heart_rate,
+            smoking_status=smoking_status,
+            bmi=bmi,
+            diabetes_duration=diabetes_duration,
+            exercise_frequency=exercise_frequency,
+            risk_score=ml_result["predicted_probability"],
+            predicted_class=ml_result["predicted_class"],
+            predicted_probability=ml_result["predicted_probability"],
+        )
+        
+        return {
+            "hr_scores": hr_scores,
+            "ml_result": ml_result,
+            "db_result": db_result,
+        }
+
+    @staticmethod
+    def get_heart_risk_assessment(patient_id: str) -> Dict[str, Any]:
+        """Fetch the latest heart risk assessment for a patient."""
+        return HeartRiskRepository.get_heart_risk_assessment(patient_id)
+
+    @staticmethod
+    def get_heart_risk_history(patient_id: str, limit: int = 5) -> list:
+        """Fetch heart risk assessment history for a patient."""
+        return HeartRiskRepository.get_heart_risk_history(patient_id, limit)
+
+    @staticmethod
+    def run_secondary_assessments(
+        patient_id: str,
+        answers: Dict[str, Any],
+        patient_info: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """
+        Run post-fusion secondary assessments (gestational + heart risk).
+        Gestational runs only for Female patients; heart risk runs for all.
+        """
+        gender = patient_info.get("gender", "")
+        result: Dict[str, Any] = {
+            "gestational": {},
+            "heart_risk": {},
+            "skipped_assessments": [],
+        }
+
+        if gender == "Female":
+            result["gestational"] = DiagnosticService.save_gestational_assessment(
+                patient_id, answers, patient_info
+            )
+        else:
+            result["skipped_assessments"].append("gestational_diabetes")
+            result["gestational"] = {
+                "skipped": True,
+                "reason": "Not applicable — gestational screening is for female patients only",
+            }
+
+        result["heart_risk"] = DiagnosticService.save_heart_risk_assessment(
+            patient_id, answers, patient_info
+        )
+
+        return result

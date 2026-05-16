@@ -36,7 +36,27 @@ sys.modules['evaluation.utils'] = sys.modules.get('utils')
 sys.modules['evaluation.config'] = sys.modules.get('config')
 
 
-CATEGORY_DIRS = ['architecture', 'rag', 'agents', 'prompts', 'safety', 'observability']
+CATEGORY_DIRS = ['architecture', 'rag', 'agents', 'prompts', 'safety', 'observability', 'duplicates']
+
+ROOT_MODULE_CATEGORIES = {
+    'architecture_score': 'architecture',
+    'rag_quality': 'rag',
+    'agent_analysis': 'agents',
+    'prompt_safety': 'prompts',
+    'observability': 'observability',
+    'duplicate_detector': 'duplicates',
+    'assessment_coverage': 'safety',
+}
+
+
+def infer_category_from_path(path: Path) -> str:
+    stem = path.stem
+    if stem in ROOT_MODULE_CATEGORIES:
+        return ROOT_MODULE_CATEGORIES[stem]
+    for c in CATEGORY_DIRS:
+        if f'/{c}/' in str(path).replace('\\', '/') or f'\\{c}\\' in str(path):
+            return c
+    return 'unknown'
 
 
 @dataclass
@@ -80,6 +100,15 @@ def infer_severity(text: str) -> str:
 
 def discover_modules(root: Path, categories: List[str]) -> List[Path]:
     files: List[Path] = []
+    ignore_files = {'__init__.py', 'config.py', 'utils.py', 'results.py', 'run_all_evaluations.py', 'requirements.txt', 'README.md'}
+
+    for p in root.glob('*.py'):
+        if p.name in ignore_files:
+            continue
+        category = infer_category_from_path(p)
+        if category in categories or 'unknown' in categories:
+            files.append(p)
+
     for cat in categories:
         folder = root / cat
         if not folder.exists():
@@ -189,6 +218,13 @@ def compute_category_scores(findings: List[Finding]) -> Dict[str, float]:
             if f'/{c}/' in aff.replace('\\', '/') or f'\\{c}\\' in aff:
                 cat = c
                 break
+        if cat == 'unknown' and aff:
+            try:
+                candidate = infer_category_from_path(Path(aff))
+                if candidate != 'unknown':
+                    cat = candidate
+            except Exception:
+                pass
         weight = SEVERITY_WEIGHTS.get(f.severity.upper(), 0.5)
         if cat in cat_scores:
             cat_scores[cat] = max(0.0, cat_scores[cat] - weight)
@@ -212,23 +248,25 @@ def generate_markdown(aggregated: Dict[str, Any], findings: List[Finding], categ
         lines.append('')
 
     # Architecture Analysis
-    arch = aggregated.get('architecture', {})
-    add_section('Architecture Analysis', [f"- Score: {category_scores.get('architecture', 'N/A')}/10", f"- Findings: {len([f for f in findings if '/architecture/' in '/'.join(f.affected_files)])}"])  # noqa: E501
+    add_section('Architecture Analysis', [f"- Score: {category_scores.get('architecture', 'N/A')}/10", f"- Findings: {len([f for f in findings if '/architecture/' in '/'.join(f.affected_files)])}" ])  # noqa: E501
 
     # RAG Analysis
-    add_section('RAG Analysis', [f"- Score: {category_scores.get('rag', 'N/A')}/10"])  # minimal
+    add_section('RAG Analysis', [f"- Score: {category_scores.get('rag', 'N/A')}/10"])
 
     # Agent Analysis
-    add_section('Agent Analysis', [f"- Score: {category_scores.get('agents', 'N/A')}/10"])  # minimal
+    add_section('Agent Analysis', [f"- Score: {category_scores.get('agents', 'N/A')}/10"])
 
     # Prompt Safety
-    add_section('Prompt Safety', [f"- Score: {category_scores.get('prompts', 'N/A')}/10"])  # minimal
+    add_section('Prompt Safety', [f"- Score: {category_scores.get('prompts', 'N/A')}/10"])
 
     # Medical Safety
-    add_section('Medical Safety', [f"- Score: {category_scores.get('safety', 'N/A')}/10"])  # minimal
+    add_section('Medical Safety', [f"- Score: {category_scores.get('safety', 'N/A')}/10"])
 
     # Observability
-    add_section('Observability', [f"- Score: {category_scores.get('observability', 'N/A')}/10"])  # minimal
+    add_section('Observability', [f"- Score: {category_scores.get('observability', 'N/A')}/10"])
+
+    # Duplicate Detection
+    add_section('Duplicate Detection', [f"- Score: {category_scores.get('duplicates', 'N/A')}/10"])
 
     # Top Critical Risks
     criticals = [f for f in findings if f.severity == 'CRITICAL']
@@ -268,7 +306,7 @@ def main(argv: Optional[List[str]] = None):
     modules = discover_modules(Path(__file__).resolve().parent, categories)
     results: List[ModuleResult] = []
     for p in modules:
-        cat = next((c for c in categories if f'/{c}/' in str(p).replace('\\', '/')), 'unknown')
+        cat = infer_category_from_path(p)
         if args.verbose:
             print('Executing', p)
         res = execute_module(p, cat, verbose=args.verbose)

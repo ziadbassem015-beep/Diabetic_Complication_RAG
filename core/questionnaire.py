@@ -398,6 +398,124 @@ QUESTIONNAIRE = [
             {"label": "Very reduced / absent (< 5°C)", "score": 3},
         ]
     },
+
+    # ─────────────────────────────────────────────
+    # SECTION 5 — GESTATIONAL DIABETES (Females Only)
+    # Eligibility: patient.gender == "Female"
+    # ─────────────────────────────────────────────
+    {
+        "id": 35, "section": "GESTATIONAL",
+        "section_label": "🤰 Gestational Diabetes Screening",
+        "question": "What is your current pregnancy week?",
+        "key": "gd_pregnancy_week",
+        "eligibility": lambda patient: patient.get("gender") == "Female",
+        "options": [
+            {"label": "Not pregnant", "score": 0},
+            {"label": "First trimester (0-13 weeks)", "score": 1},
+            {"label": "Second trimester (14-26 weeks)", "score": 2},
+            {"label": "Third trimester (27+ weeks)", "score": 3},
+        ]
+    },
+    {
+        "id": 36, "section": "GESTATIONAL",
+        "section_label": "🤰 Gestational Diabetes Screening",
+        "question": "What was your fasting glucose level (if measured)?",
+        "key": "gd_fasting_glucose",
+        "eligibility": lambda patient: patient.get("gender") == "Female",
+        "options": [
+            {"label": "Not measured or < 92 mg/dL (Normal)", "score": 0},
+            {"label": "92-100 mg/dL (Elevated)", "score": 1},
+            {"label": "101-125 mg/dL (High)", "score": 2},
+            {"label": "> 125 mg/dL (Very High)", "score": 3},
+        ]
+    },
+    {
+        "id": 37, "section": "GESTATIONAL",
+        "section_label": "🤰 Gestational Diabetes Screening",
+        "question": "Do you have a family history of gestational diabetes or type 2 diabetes?",
+        "key": "gd_family_history",
+        "eligibility": lambda patient: patient.get("gender") == "Female",
+        "options": [
+            {"label": "No", "score": 0},
+            {"label": "Yes, gestational diabetes in family", "score": 2},
+            {"label": "Yes, type 2 diabetes in family", "score": 1},
+            {"label": "Yes, both in family", "score": 3},
+        ]
+    },
+    {
+        "id": 38, "section": "GESTATIONAL",
+        "section_label": "🤰 Gestational Diabetes Screening",
+        "question": "What is your current BMI?",
+        "key": "gd_bmi",
+        "eligibility": lambda patient: patient.get("gender") == "Female",
+        "options": [
+            {"label": "< 25 (Normal weight)", "score": 0},
+            {"label": "25-29 (Overweight)", "score": 1},
+            {"label": "30-34 (Obese Class I)", "score": 2},
+            {"label": "> 35 (Obese Class II+)", "score": 3},
+        ]
+    },
+
+    # ─────────────────────────────────────────────
+    # SECTION 6 — HEART RISK (All Patients)
+    # ─────────────────────────────────────────────
+    {
+        "id": 39, "section": "HEART_RISK",
+        "section_label": "❤️ Cardiovascular Risk Assessment",
+        "question": "What is your current total cholesterol level (if measured)?",
+        "key": "hr_cholesterol",
+        "options": [
+            {"label": "Not measured or < 200 mg/dL (Desirable)", "score": 0},
+            {"label": "200-239 mg/dL (Borderline high)", "score": 1},
+            {"label": "> 240 mg/dL (High)", "score": 2},
+        ]
+    },
+    {
+        "id": 40, "section": "HEART_RISK",
+        "section_label": "❤️ Cardiovascular Risk Assessment",
+        "question": "What is your typical blood pressure (systolic/diastolic)?",
+        "key": "hr_blood_pressure",
+        "options": [
+            {"label": "< 120/80 mmHg (Normal)", "score": 0},
+            {"label": "120-139/80-89 mmHg (Elevated/Stage 1)", "score": 1},
+            {"label": "≥ 140/90 mmHg (Stage 2 Hypertension)", "score": 2},
+        ]
+    },
+    {
+        "id": 41, "section": "HEART_RISK",
+        "section_label": "❤️ Cardiovascular Risk Assessment",
+        "question": "What is your resting heart rate (beats per minute)?",
+        "key": "hr_resting_heart_rate",
+        "options": [
+            {"label": "60-100 bpm (Normal)", "score": 0},
+            {"label": "51-59 bpm or 101-110 bpm (Slightly elevated)", "score": 1},
+            {"label": "< 50 bpm or > 110 bpm (High)", "score": 2},
+        ]
+    },
+    {
+        "id": 42, "section": "HEART_RISK",
+        "section_label": "❤️ Cardiovascular Risk Assessment",
+        "question": "What is your smoking status?",
+        "key": "hr_smoking_status",
+        "options": [
+            {"label": "Never smoked", "score": 0},
+            {"label": "Former smoker (quit > 1 year ago)", "score": 1},
+            {"label": "Former smoker (quit < 1 year ago)", "score": 2},
+            {"label": "Current smoker", "score": 3},
+        ]
+    },
+    {
+        "id": 43, "section": "HEART_RISK",
+        "section_label": "❤️ Cardiovascular Risk Assessment",
+        "question": "How often do you exercise per week?",
+        "key": "hr_exercise_frequency",
+        "options": [
+            {"label": "≥ 5 times per week (Excellent)", "score": 0},
+            {"label": "3-4 times per week (Good)", "score": 1},
+            {"label": "1-2 times per week (Fair)", "score": 2},
+            {"label": "Rarely or never (Poor)", "score": 3},
+        ]
+    },
 ]
 
 
@@ -419,6 +537,52 @@ def calculate_section_scores(answers: dict) -> dict:
         "gum_score": gum_score,
         "ulcer_score": ulcer_score,
     }
+
+
+def get_eligible_questions(questionnaire: list, patient_info: dict) -> list:
+    """
+    Filter questionnaire based on patient eligibility rules.
+    - Male patients: gestational diabetes section is always excluded.
+    - Female patients: gestational section included when eligibility passes.
+    - Heart risk questions are always included.
+  """
+    gender = patient_info.get("gender", "")
+    eligible = []
+    for q in questionnaire:
+        if q.get("section") == "GESTATIONAL" and gender == "Male":
+            continue
+        if "eligibility" not in q:
+            eligible.append(q)
+        else:
+            try:
+                if q["eligibility"](patient_info):
+                    eligible.append(q)
+            except Exception:
+                pass
+    return eligible
+
+
+def calculate_gestational_score(answers: dict) -> dict:
+    """Calculate gestational diabetes risk score."""
+    gd_keys = [q["key"] for q in QUESTIONNAIRE if q["section"] == "GESTATIONAL"]
+    gd_score = sum(answers.get(k, 0) for k in gd_keys)
+    
+    return {
+        "gd_score": gd_score,
+        "gd_max_score": 12,  # 4 questions × 3 max points
+    }
+
+
+def calculate_heart_risk_score(answers: dict) -> dict:
+    """Calculate heart risk assessment score."""
+    hr_keys = [q["key"] for q in QUESTIONNAIRE if q["section"] == "HEART_RISK"]
+    hr_score = sum(answers.get(k, 0) for k in hr_keys)
+    
+    return {
+        "hr_score": hr_score,
+        "hr_max_score": 15,  # 5 questions × 3 max points
+    }
+
 
 
 def ml_neuropathy_prediction(answers: dict, nss_score: int, age: int) -> dict:
@@ -508,3 +672,113 @@ def final_decision(ai_prediction: str, nds_score: int, nss_score: int) -> dict:
         "nds_binary": nds_binary,
         "nss_binary": nss_binary,
     }
+
+
+def ml_gestational_prediction(answers: dict, gd_score: int, bmi: float, age: int) -> dict:
+    """
+    Gestational Diabetes Risk Prediction Model.
+    Features: pregnancy_week, fasting_glucose, family_history, bmi, age
+    Returns: predicted_class (0=low risk, 1=high risk), probability
+    """
+    pregnancy_week = answers.get("gd_pregnancy_week", 0)
+    fasting_glucose = answers.get("gd_fasting_glucose", 0)
+    family_history = answers.get("gd_family_history", 0)
+    
+    # Risk factors with empirical weights
+    pregnancy_risk = min(pregnancy_week / 3.0, 1.0) if pregnancy_week > 0 else 0
+    glucose_risk = min(fasting_glucose / 3.0, 1.0)
+    family_risk = min(family_history / 3.0, 1.0)
+    bmi_risk = min((bmi - 25) / 15.0, 1.0) if bmi > 25 else 0
+    age_risk = min((age - 30) / 20.0, 1.0) if age > 30 else 0
+    
+    # Weighted probability (gestational diabetes risk factors)
+    probability = (
+        0.25 * glucose_risk +
+        0.25 * family_risk +
+        0.20 * bmi_risk +
+        0.15 * pregnancy_risk +
+        0.10 * age_risk +
+        0.05 * min(gd_score / 12.0, 1.0)  # questionnaire score component
+    )
+    probability = min(max(probability, 0.0), 1.0)
+    predicted_class = 1 if probability >= 0.5 else 0
+    
+    return {
+        "predicted_class": predicted_class,
+        "predicted_probability": round(probability, 3),
+        "risk_level": "High" if predicted_class == 1 else "Low",
+        "features": {
+            "gd_score": gd_score,
+            "bmi": bmi,
+            "age": age,
+            "pregnancy_week": pregnancy_week,
+            "fasting_glucose": fasting_glucose,
+            "family_history": family_history,
+        }
+    }
+
+
+def ml_heart_risk_prediction(answers: dict, hr_score: int, age: int, diabetes_duration: int = 0) -> dict:
+    """
+    Cardiovascular Risk Prediction Model.
+    Features: cholesterol, blood_pressure, heart_rate, smoking, exercise, bmi, age, diabetes_duration
+    Returns: predicted_class (0=low, 1=medium, 2=high risk), probability
+    """
+    cholesterol = answers.get("hr_cholesterol", 0)
+    blood_pressure = answers.get("hr_blood_pressure", 0)
+    heart_rate = answers.get("hr_resting_heart_rate", 0)
+    smoking_status = answers.get("hr_smoking_status", 0)
+    exercise_frequency = answers.get("hr_exercise_frequency", 0)
+    bmi = answers.get("hr_bmi", 25)
+    
+    # Risk factor weights based on cardiovascular epidemiology
+    cholesterol_risk = min(cholesterol / 2.0, 1.0)
+    bp_risk = min(blood_pressure / 2.0, 1.0)
+    hr_risk = min(heart_rate / 2.0, 1.0)
+    smoking_risk = min(smoking_status / 3.0, 1.0)
+    exercise_risk = min(exercise_frequency / 3.0, 1.0)
+    bmi_risk = min(max((bmi - 25) / 10.0, 0.0), 1.0)
+    age_risk = min((age - 50) / 30.0, 1.0) if age > 50 else 0
+    diabetes_risk = min(diabetes_duration / 20.0, 1.0)
+    
+    # Weighted probability
+    probability = (
+        0.20 * cholesterol_risk +
+        0.20 * bp_risk +
+        0.15 * smoking_risk +
+        0.15 * age_risk +
+        0.10 * exercise_risk +
+        0.10 * diabetes_risk +
+        0.05 * bmi_risk +
+        0.05 * hr_risk
+    )
+    probability = min(max(probability, 0.0), 1.0)
+    
+    # Classify risk level
+    if probability < 0.33:
+        predicted_class = 0
+        risk_level = "Low"
+    elif probability < 0.66:
+        predicted_class = 1
+        risk_level = "Medium"
+    else:
+        predicted_class = 2
+        risk_level = "High"
+    
+    return {
+        "predicted_class": predicted_class,
+        "predicted_probability": round(probability, 3),
+        "risk_level": risk_level,
+        "features": {
+            "hr_score": hr_score,
+            "age": age,
+            "diabetes_duration": diabetes_duration,
+            "cholesterol": cholesterol,
+            "blood_pressure": blood_pressure,
+            "heart_rate": heart_rate,
+            "smoking_status": smoking_status,
+            "exercise_frequency": exercise_frequency,
+            "bmi": bmi,
+        }
+    }
+

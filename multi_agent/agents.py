@@ -527,6 +527,31 @@ class ReportGeneratorAgent:
             for r in state.episodic[:3]
         ]) or "No previous diagnoses on record."
 
+        gender = state.patient_info.get("gender", "")
+        gd = state.gestational_results or {}
+        hr = state.heart_risk_results or {}
+        if gender == "Male" or gd.get("skipped"):
+            gestational_block = "Not applicable — gestational diabetes screening is for female patients only."
+        elif gd.get("ml_result"):
+            ml_gd = gd["ml_result"]
+            gestational_block = (
+                f"Risk level: {ml_gd.get('risk_level', 'N/A')} | "
+                f"Probability: {ml_gd.get('predicted_probability', 0):.1%} | "
+                f"Questionnaire score: {gd.get('gd_scores', {}).get('gd_score', 'N/A')}"
+            )
+        else:
+            gestational_block = "No gestational diabetes data collected."
+
+        if hr.get("ml_result"):
+            ml_hr = hr["ml_result"]
+            heart_risk_block = (
+                f"Risk level: {ml_hr.get('risk_level', 'N/A')} | "
+                f"Probability: {ml_hr.get('predicted_probability', 0):.1%} | "
+                f"Questionnaire score: {hr.get('hr_scores', {}).get('hr_score', 'N/A')}"
+            )
+        else:
+            heart_risk_block = "No heart risk data collected."
+
         prompt = f"""Generate a comprehensive, patient-friendly medical diagnostic report in English.
 
 === PATIENT ===
@@ -555,6 +580,10 @@ Decision Path: {decision_path}
 === PAST MEDICAL HISTORY (PREVIOUS DIAGNOSES) ===
 {episodic_context}
 
+=== SECONDARY ASSESSMENTS ===
+Gestational Diabetes: {gestational_block}
+Heart Risk: {heart_risk_block}
+
 === REASONING ITERATIONS ===
 Total iterations: {state.iteration}
 Tools called: {len([e for e in state.audit_log if 'Executing' in e.action])}
@@ -568,7 +597,9 @@ Write the final report with:
 6. ⏳ Medical History Comparison (Briefly compare current state with past diagnoses if available)
 7. 🔍 Uncertainty Note (what we are not certain about)
 8. 📌 Recommendations (4-5 bullet points)
-9. 🚨 Disclaimer: This is AI-assisted analysis only. Always consult a certified physician."""
+9. 🚨 Disclaimer: This is AI-assisted analysis only. Always consult a certified physician.
+10. 🤰 Gestational Diabetes Screening (use gestational data above; if male, state Not applicable)
+11. ❤️ Heart Risk Assessment (always include cardiovascular risk summary)"""
 
         report = call_llm(prompt)
         state.final_report = report

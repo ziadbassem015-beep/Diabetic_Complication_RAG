@@ -1,15 +1,16 @@
 """
 multi_agent/graph.py — LangGraph-Style Stateful Graph Orchestrator.
 
-PHASE 1: Mandatory questionnaire (all questions from questionnaire.py)
-PHASE 2: ML inference + Fusion scoring
+PHASE 1: Mandatory questionnaire (eligible questions from questionnaire.py)
+PHASE 2a: ML inference + Fusion scoring (neuropathy PDN — unchanged)
+PHASE 2b: Secondary assessments (gestational + heart risk)
 PHASE 3: Reflection + Report generation
 """
 import uuid
 from .state import (
     MultiAgentState,
     NODE_PLANNER, NODE_MEMORY, NODE_REASONING, NODE_TOOL,
-    NODE_ML, NODE_FUSION, NODE_REFLECTION, NODE_REPORT,
+    NODE_ML, NODE_FUSION, NODE_SECONDARY, NODE_REFLECTION, NODE_REPORT,
     NODE_WAIT, NODE_END
 )
 from .memory import HybridMemory
@@ -18,9 +19,18 @@ from .agents import (
     ToolNode, MLInferenceAgent, FusionDecisionAgent,
     ReflectionAgent, ReportGeneratorAgent
 )
-from core.questionnaire import QUESTIONNAIRE  # the full list of questions
+from core.questionnaire import QUESTIONNAIRE, get_eligible_questions
+from core.services.diagnostic_service import DiagnosticService
 
 NODE_QUESTIONNAIRE = "questionnaire_node"
+
+_SECTION_EMOJI = {
+    "NSS": "🧠", "NDS": "🦾", "GUM": "🦷",
+    "ULCER": "🩹", "ML": "📊",
+    "GESTATIONAL": "🤰", "HEART_RISK": "❤️",
+    "nss": "🧠", "nds": "🦾", "gum": "🦷",
+    "ulcer": "🩹", "ml": "📊",
+}
 
 
 class DiagnosticGraph:
@@ -29,16 +39,16 @@ class DiagnosticGraph:
 
     Execution Phases (STRICT ORDER):
     ─────────────────────────────────────────────────────────────────
-    Phase 1  [planner] → [memory] → [questionnaire] ×N questions
-    Phase 2  [ml_node] → [fusion_node]
+    Phase 1  [planner] → [memory] → [questionnaire] ×N eligible questions
+    Phase 2a [ml_node] → [fusion_node]
+    Phase 2b [secondary_assessment_node]
     Phase 3  [reflection] → [report] → END
     ─────────────────────────────────────────────────────────────────
-    The LLM reasoning agent is used only for reflection.
-    The questionnaire is driven by the fixed question list from questionnaire.py.
     """
 
     def __init__(self, patient: dict, session_id: str = None):
         self.session_id = session_id or str(uuid.uuid4())
+        self.eligible_questions = get_eligible_questions(QUESTIONNAIRE, patient)
 
         # Initialize agents
         self.planner      = PlannerAgent()
@@ -55,54 +65,104 @@ class DiagnosticGraph:
             patient_info={**patient, "session_id": self.session_id},
             current_node=NODE_PLANNER,
             next_node=NODE_PLANNER,
-            max_iterations=len(QUESTIONNAIRE) + 15,  # enough for all questions + phases
+            max_iterations=len(self.eligible_questions) + 15,
         )
+
+        if patient.get("gender") == "Male":
+            self.state.skipped_assessments.append("gestational_diabetes")
 
         # Initialize memory system
         self.memory = HybridMemory(patient["id"], self.session_id)
 
+    def _questionnaire_total(self) -> int:
+        return len(self.eligible_questions)
+
     # ══════════════════════════════════════════════════════════════
-    # QUESTIONNAIRE NODE — ask one question at a time
+    # QUESTIONNAIRE NODE — ask one eligible question at a time
     # ══════════════════════════════════════════════════════════════
     def _run_questionnaire_node(self):
-        """Ask the next question in the questionnaire list."""
+        """Ask the next question in the eligible questionnaire list."""
         step = self.state.questionnaire_step
+        total = self._questionnaire_total()
 
-        if step >= len(QUESTIONNAIRE):
-            # All questions answered — advance to ML
+        if step >= total:
             self.state.emit("agent_start", "All questions collected. Running ML inference...", "graph")
             self.state.next_node = NODE_ML
             return
 
-        q = QUESTIONNAIRE[step]
+        q = self.eligible_questions[step]
         question_text = q["question"]
         options = q["options"]
         key = q["key"]
         section = q.get("section", "")
-        section_emoji = {
-            "NSS": "🧠", "NDS": "🦾", "GUM": "🦷",
-            "ULCER": "🩹", "ML": "📊",
-            "nss": "🧠", "nds": "🦾", "gum": "🦷",
-            "ulcer": "🩹", "ml": "📊"
-        }.get(section, "❓")
+        section_emoji = _SECTION_EMOJI.get(section, "❓")
 
         self.state.emit(
             "agent_start",
-            f"{section_emoji} Section: {section.upper()} — Question {step + 1}/{len(QUESTIONNAIRE)}",
+            f"{section_emoji} Section: {section.upper()} — Question {step + 1}/{total}",
             "ClinicalReasoningAgent"
         )
 
-        # Set waiting state
         self.state.waiting_for_patient = True
         self.state.pending_question = {
             "question": f"{section_emoji} {question_text}",
-            "options": [o["label"] for o in options],       # strings only for UI
-            "score_map": {o["label"]: o["score"] for o in options},  # label → score
+            "options": [o["label"] for o in options],
+            "score_map": {o["label"]: o["score"] for o in options},
             "key": key,
             "step": step,
             "section": section
         }
         self.state.next_node = NODE_WAIT
+
+    # ══════════════════════════════════════════════════════════════
+    # SECONDARY ASSESSMENT NODE — gestational + heart risk (no agent class)
+    # ══════════════════════════════════════════════════════════════
+    def _run_secondary_assessment_node(self):
+        """Run secondary assessments after PDN fusion via DiagnosticService."""
+        self.state.log("graph", "Running secondary assessments")
+        self.state.emit(
+            "agent_start",
+            "Running gestational diabetes and cardiovascular risk assessments...",
+            "graph",
+        )
+
+        outcome = DiagnosticService.run_secondary_assessments(
+            self.state.patient_id,
+            self.state.answers,
+            self.state.patient_info,
+        )
+
+        self.state.gestational_results = outcome.get("gestational", {})
+        self.state.heart_risk_results = outcome.get("heart_risk", {})
+        for skipped in outcome.get("skipped_assessments", []):
+            if skipped not in self.state.skipped_assessments:
+                self.state.skipped_assessments.append(skipped)
+
+        self.state.secondary_assessments_complete = True
+
+        gd = self.state.gestational_results
+        hr = self.state.heart_risk_results
+        if gd.get("skipped"):
+            self.state.emit("secondary", "Gestational diabetes: Not applicable (male patient)", "graph")
+        elif gd.get("ml_result"):
+            ml_gd = gd["ml_result"]
+            self.state.emit(
+                "secondary",
+                f"Gestational diabetes: {ml_gd.get('risk_level', 'N/A')} risk "
+                f"(prob={ml_gd.get('predicted_probability', 0):.1%})",
+                "graph",
+            )
+        if hr.get("ml_result"):
+            ml_hr = hr["ml_result"]
+            self.state.emit(
+                "secondary",
+                f"Heart risk: {ml_hr.get('risk_level', 'N/A')} "
+                f"(prob={ml_hr.get('predicted_probability', 0):.1%})",
+                "graph",
+            )
+
+        self.state.log("graph", "Secondary assessments complete", outcome)
+        self.state.next_node = NODE_REFLECTION
 
     # ── Node Execution Map ──────────────────────────────────────────
     def _run_node(self, node: str) -> str:
@@ -112,11 +172,11 @@ class DiagnosticGraph:
 
         if node == NODE_PLANNER:
             self.state = self.planner.run(self.state)
-            self.state.next_node = NODE_MEMORY  # always go to memory after planning
+            self.state.next_node = NODE_MEMORY
 
         elif node == NODE_MEMORY:
             self.state = self.memory_agent.run(self.state, self.memory)
-            self.state.next_node = NODE_QUESTIONNAIRE  # always start questionnaire after memory
+            self.state.next_node = NODE_QUESTIONNAIRE
 
         elif node == NODE_QUESTIONNAIRE:
             self._run_questionnaire_node()
@@ -126,6 +186,9 @@ class DiagnosticGraph:
 
         elif node == NODE_FUSION:
             self.state = self.fusion_agent.run(self.state)
+
+        elif node == NODE_SECONDARY:
+            self._run_secondary_assessment_node()
 
         elif node == NODE_REFLECTION:
             self.state = self.reflector.run(self.state)
@@ -145,32 +208,40 @@ class DiagnosticGraph:
         No LLM can skip a phase.
         """
         state = self.state
+        total = self._questionnaire_total()
 
-        # Always stop if complete
         if state.is_complete:
             return NODE_END
 
-        # Pause for patient input
         if state.waiting_for_patient:
             return NODE_WAIT
 
-        # ── Phase 1: Questionnaire must complete before ML ──────────
-        # If questionnaire not done, never allow ML/Fusion/Report
-        q_done = state.questionnaire_step >= len(QUESTIONNAIRE)
+        q_done = state.questionnaire_step >= total
 
-        if not q_done and next_proposed in (NODE_ML, NODE_FUSION, NODE_REPORT, NODE_END):
+        blocked_pre_questionnaire = (NODE_ML, NODE_FUSION, NODE_SECONDARY, NODE_REPORT, NODE_END)
+        if not q_done and next_proposed in blocked_pre_questionnaire:
             return NODE_QUESTIONNAIRE
 
-        # ── Phase 2: ML must run before Fusion ─────────────────────
-        if q_done and not state.has_ml_data() and next_proposed in (NODE_FUSION, NODE_REPORT):
+        if q_done and not state.has_ml_data() and next_proposed in (NODE_FUSION, NODE_SECONDARY, NODE_REPORT):
             return NODE_ML
 
-        # ── Phase 3: Fusion must run before Report ──────────────────
-        if state.has_ml_data() and not state.has_fusion() and next_proposed == NODE_REPORT:
+        if state.has_ml_data() and not state.has_fusion() and next_proposed in (
+            NODE_SECONDARY, NODE_REPORT, NODE_REFLECTION
+        ):
             return NODE_FUSION
 
-        # ── After Fusion → Reflection → Report ─────────────────────
-        if state.has_fusion() and next_proposed not in (NODE_REFLECTION, NODE_REPORT, NODE_END):
+        if (
+            state.has_fusion()
+            and not state.secondary_assessments_complete
+            and next_proposed in (NODE_REFLECTION, NODE_REPORT)
+        ):
+            return NODE_SECONDARY
+
+        if (
+            state.has_fusion()
+            and state.secondary_assessments_complete
+            and next_proposed not in (NODE_REFLECTION, NODE_REPORT, NODE_END)
+        ):
             return NODE_REFLECTION
 
         return next_proposed
@@ -190,7 +261,7 @@ class DiagnosticGraph:
 
         while current not in (NODE_WAIT, NODE_END) and not self.state.is_complete:
             visited += 1
-            if visited > 25:
+            if visited > 30:
                 self.state.emit("warning", "Graph safety limit hit.", "graph")
                 break
 
@@ -214,22 +285,19 @@ class DiagnosticGraph:
         if not self.state.waiting_for_patient:
             return []
 
-        # Look up numeric score from score_map (for calculate_section_scores)
         score_map = self.state.pending_question.get("score_map", {})
-        score_value = score_map.get(answer, answer)  # fallback to answer itself if not found
+        score_value = score_map.get(answer, answer)
 
-        # Store numeric score in answers (used for scoring)
         self.state.answers[key] = score_value
         self.state.add_message("user", f"{answer} (score: {score_value})")
         self.memory.save_short_term("user", answer)
 
-        # Advance questionnaire step
         self.state.questionnaire_step += 1
         self.state.waiting_for_patient = False
         self.state.pending_question = {}
 
-        # Route: more questions or ML phase
-        if self.state.questionnaire_step < len(QUESTIONNAIRE):
+        total = self._questionnaire_total()
+        if self.state.questionnaire_step < total:
             self.state.next_node = NODE_QUESTIONNAIRE
         else:
             self.state.emit("agent_start", "Questionnaire complete! Moving to analysis...", "graph")
@@ -267,7 +335,11 @@ class DiagnosticGraph:
     @property
     def progress(self) -> tuple[int, int]:
         """Returns (answered, total) for progress bar."""
-        return self.state.questionnaire_step, len(QUESTIONNAIRE)
+        return self.state.questionnaire_step, self._questionnaire_total()
+
+    @property
+    def eligible_question_count(self) -> int:
+        return self._questionnaire_total()
 
     def get_audit_log(self) -> list[dict]:
         return [
