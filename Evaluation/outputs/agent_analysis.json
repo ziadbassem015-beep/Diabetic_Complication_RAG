@@ -1,6 +1,6 @@
 {
   "score": 7,
-  "files_checked": 5,
+  "files_checked": 8,
   "findings": [
     {
       "file": "multi_agent\\__init__.py",

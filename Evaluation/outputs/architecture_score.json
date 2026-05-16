@@ -1,6 +1,16 @@
 {
-  "score": 7,
+  "score": 6,
   "findings": [
-    "Direct supabase usage outside client: D:\\Diabetic_Complication_RAG\\core\\database\\client.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\base_repository.py,D:\\Diabetic_Complication_RAG\\Evaluation\\meta_analysis\\weakness_detector.py"
-  ]
+    {
+      "file": "Evaluation\\architecture_score.py",
+      "issue": "Direct Supabase import found outside database client module",
+      "severity": "HIGH",
+      "recommendation": "Move direct Supabase client creation into core.database.client and reference it through repositories only."
+    }
+  ],
+  "summary": {
+    "service_files": 2,
+    "repository_files": 9,
+    "db_client_exists": true
+  }
 }
