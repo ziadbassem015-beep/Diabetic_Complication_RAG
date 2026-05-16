@@ -1,27 +1,383 @@
 [
   {
-    "name": "eval_mod_architecture_score_1778942665913",
-    "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\architecture\\architecture_score.py",
-    "category": "architecture",
+    "name": "eval_mod_agent_analysis_1778945348333",
+    "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\agent_analysis.py",
+    "category": "agents",
     "success": true,
-    "runtime_ms": 527.9481410980225,
+    "runtime_ms": 586.8697166442871,
     "result": {
       "score": 7,
+      "files_checked": 5,
       "findings": [
-        "Direct supabase usage outside client: D:\\Diabetic_Complication_RAG\\core\\database\\client.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\clinical_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\decision_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\ml_repo.py"
+        {
+          "file": "multi_agent\\__init__.py",
+          "issue": "DiagnosticGraph missing initialize()",
+          "severity": "MEDIUM",
+          "recommendation": "Implement DiagnosticGraph.initialize() or confirm the graph is initialized before use."
+        }
       ]
     },
     "error": null
   },
   {
-    "name": "eval_mod_retrieval_quality_1778942666442",
+    "name": "eval_mod_architecture_score_1778945348920",
+    "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\architecture_score.py",
+    "category": "architecture",
+    "success": true,
+    "runtime_ms": 582.5042724609375,
+    "result": {
+      "score": 6,
+      "findings": [
+        {
+          "file": "Evaluation\\architecture_score.py",
+          "issue": "Direct Supabase import found outside database client module",
+          "severity": "HIGH",
+          "recommendation": "Move direct Supabase client creation into core.database.client and reference it through repositories only."
+        }
+      ],
+      "summary": {
+        "service_files": 2,
+        "repository_files": 7,
+        "db_client_exists": true
+      }
+    },
+    "error": null
+  },
+  {
+    "name": "eval_mod_duplicate_detector_1778945349502",
+    "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\duplicate_detector.py",
+    "category": "duplicates",
+    "success": true,
+    "runtime_ms": 19260.425329208374,
+    "result": {
+      "score": 0,
+      "exact_duplicate_groups": [],
+      "similar_pairs": [
+        {
+          "file_a": "Evaluation\\agents\\__init__.py",
+          "file_b": "Evaluation\\rag\\__init__.py",
+          "similarity": 0.881
+        },
+        {
+          "file_a": "Evaluation\\agents\\__init__.py",
+          "file_b": "Evaluation\\safety\\__init__.py",
+          "similarity": 0.871
+        },
+        {
+          "file_a": "Evaluation\\agents\\__init__.py",
+          "file_b": "Evaluation\\prompts\\__init__.py",
+          "similarity": 0.857
+        },
+        {
+          "file_a": "Evaluation\\rag\\__init__.py",
+          "file_b": "Evaluation\\safety\\__init__.py",
+          "similarity": 0.847
+        },
+        {
+          "file_a": "Evaluation\\prompts\\__init__.py",
+          "file_b": "Evaluation\\rag\\__init__.py",
+          "similarity": 0.833
+        },
+        {
+          "file_a": "Evaluation\\prompts\\__init__.py",
+          "file_b": "Evaluation\\safety\\__init__.py",
+          "similarity": 0.825
+        },
+        {
+          "file_a": "Evaluation\\agents\\__init__.py",
+          "file_b": "Evaluation\\architecture\\__init__.py",
+          "similarity": 0.824
+        },
+        {
+          "file_a": "Evaluation\\observability\\__init__.py",
+          "file_b": "Evaluation\\safety\\__init__.py",
+          "similarity": 0.812
+        },
+        {
+          "file_a": "Evaluation\\architecture\\__init__.py",
+          "file_b": "Evaluation\\rag\\__init__.py",
+          "similarity": 0.8
+        },
+        {
+          "file_a": "Evaluation\\agents\\__init__.py",
+          "file_b": "Evaluation\\observability\\__init__.py",
+          "similarity": 0.783
+        },
+        {
+          "file_a": "Evaluation\\architecture\\__init__.py",
+          "file_b": "Evaluation\\prompts\\__init__.py",
+          "similarity": 0.783
+        },
+        {
+          "file_a": "Evaluation\\architecture\\__init__.py",
+          "file_b": "Evaluation\\safety\\__init__.py",
+          "similarity": 0.765
+        },
+        {
+          "file_a": "Evaluation\\observability\\__init__.py",
+          "file_b": "Evaluation\\rag\\__init__.py",
+          "similarity": 0.758
+        }
+      ],
+      "findings": [
+        {
+          "issue": "High similarity pair detected",
+          "severity": "LOW",
+          "files": [
+            "Evaluation\\agents\\__init__.py",
+            "Evaluation\\architecture\\__init__.py"
+          ],
+          "similarity": 0.824,
+          "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+        },
+        {
+          "issue": "High similarity pair detected",
+          "severity": "LOW",
+          "files": [
+            "Evaluation\\agents\\__init__.py",
+            "Evaluation\\observability\\__init__.py"
+          ],
+          "similarity": 0.783,
+          "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+        },
+        {
+          "issue": "High similarity pair detected",
+          "severity": "LOW",
+          "files": [
+            "Evaluation\\agents\\__init__.py",
+            "Evaluation\\prompts\\__init__.py"
+          ],
+          "similarity": 0.857,
+          "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+        },
+        {
+          "issue": "High similarity pair detected",
+          "severity": "LOW",
+          "files": [
+            "Evaluation\\agents\\__init__.py",
+            "Evaluation\\rag\\__init__.py"
+          ],
+          "similarity": 0.881,
+          "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+        },
+        {
+          "issue": "High similarity pair detected",
+          "severity": "LOW",
+          "files": [
+            "Evaluation\\agents\\__init__.py",
+            "Evaluation\\safety\\__init__.py"
+          ],
+          "similarity": 0.871,
+          "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+        },
+        {
+          "issue": "High similarity pair detected",
+          "severity": "LOW",
+          "files": [
+            "Evaluation\\architecture\\__init__.py",
+            "Evaluation\\prompts\\__init__.py"
+          ],
+          "similarity": 0.783,
+          "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+        },
+        {
+          "issue": "High similarity pair detected",
+          "severity": "LOW",
+          "files": [
+            "Evaluation\\architecture\\__init__.py",
+            "Evaluation\\rag\\__init__.py"
+          ],
+          "similarity": 0.8,
+          "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+        },
+        {
+          "issue": "High similarity pair detected",
+          "severity": "LOW",
+          "files": [
+            "Evaluation\\architecture\\__init__.py",
+            "Evaluation\\safety\\__init__.py"
+          ],
+          "similarity": 0.765,
+          "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+        },
+        {
+          "issue": "High similarity pair detected",
+          "severity": "LOW",
+          "files": [
+            "Evaluation\\observability\\__init__.py",
+            "Evaluation\\rag\\__init__.py"
+          ],
+          "similarity": 0.758,
+          "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+        },
+        {
+          "issue": "High similarity pair detected",
+          "severity": "LOW",
+          "files": [
+            "Evaluation\\observability\\__init__.py",
+            "Evaluation\\safety\\__init__.py"
+          ],
+          "similarity": 0.812,
+          "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+        },
+        {
+          "issue": "High similarity pair detected",
+          "severity": "LOW",
+          "files": [
+            "Evaluation\\prompts\\__init__.py",
+            "Evaluation\\rag\\__init__.py"
+          ],
+          "similarity": 0.833,
+          "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+        },
+        {
+          "issue": "High similarity pair detected",
+          "severity": "LOW",
+          "files": [
+            "Evaluation\\prompts\\__init__.py",
+            "Evaluation\\safety\\__init__.py"
+          ],
+          "similarity": 0.825,
+          "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+        },
+        {
+          "issue": "High similarity pair detected",
+          "severity": "LOW",
+          "files": [
+            "Evaluation\\rag\\__init__.py",
+            "Evaluation\\safety\\__init__.py"
+          ],
+          "similarity": 0.847,
+          "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "name": "eval_mod_observability_1778945368763",
+    "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\observability.py",
+    "category": "observability",
+    "success": true,
+    "runtime_ms": 575.0720500946045,
+    "result": {
+      "score": 10,
+      "logging_file_count": 10,
+      "metrics_file_count": 6,
+      "logging_files": [
+        "Evaluation\\observability.py",
+        "Evaluation\\observability\\telemetry_check.py",
+        "core\\database\\client.py",
+        "core\\repositories\\base_repository.py",
+        "core\\repositories\\clinical_repo.py",
+        "core\\repositories\\decision_repo.py",
+        "core\\repositories\\memory_repo.py",
+        "core\\repositories\\ml_repo.py",
+        "core\\repositories\\patient_repo.py",
+        "core\\services\\diagnostic_service.py"
+      ],
+      "metrics_files": [
+        "Evaluation\\meta_analysis\\analyze_scores.py",
+        "Evaluation\\observability.py",
+        "Evaluation\\observability\\telemetry_check.py",
+        "Evaluation\\reports\\generate_final_report.py",
+        "Evaluation\\run_all_evaluations.py",
+        "multi_agent\\state.py"
+      ],
+      "findings": []
+    },
+    "error": null
+  },
+  {
+    "name": "eval_mod_prompt_safety_1778945369338",
+    "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\prompt_safety.py",
+    "category": "prompts",
+    "success": true,
+    "runtime_ms": 576.49827003479,
+    "result": {
+      "score": 6,
+      "unsafe_hits": [
+        {
+          "file": "main.py",
+          "snippet": "print(f\"\\n✅ Welcome, {patient['name']}! I will help you with your diagnosis.\")"
+        },
+        {
+          "file": "rag_engine.py",
+          "snippet": "2. Provide a final diagnosis if enough information (NSS, NDS, ML) is gathered."
+        }
+      ],
+      "findings": [
+        {
+          "file": "main.py",
+          "issue": "Potential unsafe medical wording without disclaimer",
+          "severity": "MEDIUM",
+          "description": "print(f\"\\n✅ Welcome, {patient['name']}! I will help you with your diagnosis.\")",
+          "recommendation": "Add clear medical disclaimers around clinical advice and avoid diagnostic language without supervision."
+        },
+        {
+          "file": "rag_engine.py",
+          "issue": "Potential unsafe medical wording without disclaimer",
+          "severity": "MEDIUM",
+          "description": "2. Provide a final diagnosis if enough information (NSS, NDS, ML) is gathered.",
+          "recommendation": "Add clear medical disclaimers around clinical advice and avoid diagnostic language without supervision."
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "name": "eval_mod_rag_quality_1778945369914",
+    "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\rag_quality.py",
+    "category": "rag",
+    "success": true,
+    "runtime_ms": 572.3123550415039,
+    "result": {
+      "score": 10,
+      "matches_found": 4,
+      "retrieval_files": [
+        "Evaluation\\rag_quality.py",
+        "core\\rag_engine.py",
+        "core\\services\\diagnostic_service.py",
+        "core\\tools.py",
+        "multi_agent\\memory.py",
+        "rag_engine.py"
+      ],
+      "findings": [
+        {
+          "issue": "RAG retrieval pipeline contains match_memory and retrieval hooks",
+          "severity": "LOW"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "name": "eval_mod_architecture_score_1778945370487",
+    "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\architecture\\architecture_score.py",
+    "category": "architecture",
+    "success": true,
+    "runtime_ms": 553.0707836151123,
+    "result": {
+      "score": 7,
+      "findings": [
+        "Direct supabase usage outside client: D:\\Diabetic_Complication_RAG\\core\\database\\client.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\base_repository.py,D:\\Diabetic_Complication_RAG\\Evaluation\\meta_analysis\\weakness_detector.py"
+      ]
+    },
+    "error": null
+  },
+  {
+    "name": "eval_mod_retrieval_quality_1778945371041",
     "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\rag\\retrieval_quality.py",
     "category": "rag",
     "success": true,
-    "runtime_ms": 618.2987689971924,
+    "runtime_ms": 562.0021820068359,
     "result": {
-      "matches_found": 3,
+      "matches_found": 4,
       "details": [
+        {
+          "file": "D:\\Diabetic_Complication_RAG\\Evaluation\\rag_quality.py",
+          "hint": "Uses match_memory RPC"
+        },
         {
           "file": "D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py",
           "hint": "Uses match_memory RPC"
@@ -39,11 +395,11 @@
     "error": null
   },
   {
-    "name": "eval_mod_agent_flow_analysis_1778942667060",
+    "name": "eval_mod_agent_flow_analysis_1778945371604",
     "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\agents\\agent_flow_analysis.py",
     "category": "agents",
     "success": true,
-    "runtime_ms": 598.2832908630371,
+    "runtime_ms": 554.6658039093018,
     "result": {
       "files_checked": 5,
       "findings": [
@@ -56,11 +412,11 @@
     "error": null
   },
   {
-    "name": "eval_mod_prompt_safety_analysis_1778942667660",
+    "name": "eval_mod_prompt_safety_analysis_1778945372158",
     "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\prompts\\prompt_safety_analysis.py",
     "category": "prompts",
     "success": true,
-    "runtime_ms": 546.0028648376465,
+    "runtime_ms": 561.1565113067627,
     "result": {
       "hits": 4,
       "details": [
@@ -81,14 +437,18 @@
     "error": null
   },
   {
-    "name": "eval_mod_medical_safety_check_1778942668206",
+    "name": "eval_mod_medical_safety_check_1778945372720",
     "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\safety\\medical_safety_check.py",
     "category": "safety",
     "success": true,
-    "runtime_ms": 508.04662704467773,
+    "runtime_ms": 563.6944770812988,
     "result": {
-      "issues": 1,
+      "issues": 2,
       "details": [
+        {
+          "file": "D:\\Diabetic_Complication_RAG\\Evaluation\\prompt_safety.py",
+          "issue": "uses word diagnose without clinician-disclaimer"
+        },
         {
           "file": "D:\\Diabetic_Complication_RAG\\multi_agent\\agents.py",
           "issue": "uses word diagnose without clinician-disclaimer"
@@ -98,14 +458,14 @@
     "error": null
   },
   {
-    "name": "eval_mod_telemetry_check_1778942668714",
+    "name": "eval_mod_telemetry_check_1778945373285",
     "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\observability\\telemetry_check.py",
     "category": "observability",
     "success": true,
-    "runtime_ms": 499.2556571960449,
+    "runtime_ms": 571.4349746704102,
     "result": {
-      "logging": 8,
-      "metrics": 1
+      "logging": 10,
+      "metrics": 2
     },
     "error": null
   }

@@ -99,6 +99,48 @@ CREATE TABLE IF NOT EXISTS knowledge_base (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- 10. Gestational Diabetes Assessment (Female patients only)
+CREATE TABLE IF NOT EXISTS gestational_diabetes_assessments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    patient_id UUID REFERENCES patients(id) ON DELETE CASCADE,
+    pregnancy_week INTEGER,
+    glucose_level FLOAT,
+    fasting_glucose FLOAT,
+    insulin_resistance FLOAT,
+    bmi FLOAT,
+    family_history BOOLEAN,
+    risk_score FLOAT,
+    predicted_class INTEGER, -- 0 = low risk, 1 = high risk
+    predicted_probability FLOAT,
+    severity TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 11. Heart Risk Assessment (All patients)
+CREATE TABLE IF NOT EXISTS heart_risk_assessments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    patient_id UUID REFERENCES patients(id) ON DELETE CASCADE,
+    cholesterol FLOAT,
+    blood_pressure_systolic FLOAT,
+    blood_pressure_diastolic FLOAT,
+    resting_heart_rate INTEGER,
+    smoking_status TEXT, -- 'never', 'former', 'current'
+    bmi FLOAT,
+    diabetes_duration INTEGER,
+    exercise_frequency INTEGER, -- times per week
+    risk_score FLOAT,
+    predicted_class INTEGER, -- 0 = low risk, 1 = medium risk, 2 = high risk
+    predicted_probability FLOAT,
+    severity TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create indexes for better query performance
+CREATE INDEX IF NOT EXISTS idx_gestational_patient_id ON gestational_diabetes_assessments(patient_id);
+CREATE INDEX IF NOT EXISTS idx_gestational_created_at ON gestational_diabetes_assessments(created_at);
+CREATE INDEX IF NOT EXISTS idx_heart_risk_patient_id ON heart_risk_assessments(patient_id);
+CREATE INDEX IF NOT EXISTS idx_heart_risk_created_at ON heart_risk_assessments(created_at);
+
 -- Create a function to search for relevant knowledge/memory (for RAG)
 CREATE OR REPLACE FUNCTION match_memory (
     query_embedding VECTOR(1536),

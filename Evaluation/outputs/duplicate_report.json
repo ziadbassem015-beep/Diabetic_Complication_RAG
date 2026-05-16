@@ -1,0 +1,140 @@
+{
+  "summary": {
+    "total_files_scanned": 75,
+    "duplicate_pairs_detected": 34,
+    "duplicate_type": "Exact subtree duplication (Diabetic_Complication_RAG/Diabetic_Complication_RAG)",
+    "notes": "A full copy of a large portion of the project exists at d:/Diabetic_Complication_RAG/Diabetic_Complication_RAG. Many modules are byte-identical."
+  },
+  "duplicate_pairs": [
+    {
+      "path_a": "d:/Diabetic_Complication_RAG/core/database/client.py",
+      "path_b": "d:/Diabetic_Complication_RAG/Diabetic_Complication_RAG/core/database/client.py",
+      "similarity": 1.0,
+      "evidence": "identical file contents; get_supabase() implementation matches exactly (see class/module header)."
+    },
+    {
+      "path_a": "d:/Diabetic_Complication_RAG/core/repositories/clinical_repo.py",
+      "path_b": "d:/Diabetic_Complication_RAG/Diabetic_Complication_RAG/core/repositories/clinical_repo.py",
+      "similarity": 1.0,
+      "evidence": "class ClinicalRepository defined at line 7 in both files; methods and SQL/table calls match exactly."
+    },
+    {
+      "path_a": "d:/Diabetic_Complication_RAG/core/repositories/ml_repo.py",
+      "path_b": "d:/Diabetic_Complication_RAG/Diabetic_Complication_RAG/core/repositories/ml_repo.py",
+      "similarity": 1.0,
+      "evidence": "class MLRepository defined at line 7 in both files; identical insert/select patterns."
+    },
+    {
+      "path_a": "d:/Diabetic_Complication_RAG/core/repositories/memory_repo.py",
+      "path_b": "d:/Diabetic_Complication_RAG/Diabetic_Complication_RAG/core/repositories/memory_repo.py",
+      "similarity": 1.0
+    },
+    {
+      "path_a": "d:/Diabetic_Complication_RAG/core/repositories/decision_repo.py",
+      "path_b": "d:/Diabetic_Complication_RAG/Diabetic_Complication_RAG/core/repositories/decision_repo.py",
+      "similarity": 1.0
+    },
+    {
+      "path_a": "d:/Diabetic_Complication_RAG/core/repositories/patient_repo.py",
+      "path_b": "d:/Diabetic_Complication_RAG/Diabetic_Complication_RAG/core/repositories/patient_repo.py",
+      "similarity": 1.0
+    },
+    {
+      "path_a": "d:/Diabetic_Complication_RAG/core/services/diagnostic_service.py",
+      "path_b": "d:/Diabetic_Complication_RAG/Diabetic_Complication_RAG/core/services/diagnostic_service.py",
+      "similarity": 1.0,
+      "evidence": "DiagnosticService.compute_fusion() at line 88 exists in both files; service orchestration identical."
+    },
+    {
+      "path_a": "d:/Diabetic_Complication_RAG/core/tools.py",
+      "path_b": "d:/Diabetic_Complication_RAG/Diabetic_Complication_RAG/core/tools.py",
+      "similarity": 1.0,
+      "evidence": "tool_calculate_fusion_score defined at line 115 in both files; tool registry duplicated."
+    },
+    {
+      "path_a": "d:/Diabetic_Complication_RAG/core/rag_engine.py",
+      "path_b": "d:/Diabetic_Complication_RAG/Diabetic_Complication_RAG/core/rag_engine.py",
+      "similarity": 1.0,
+      "evidence": "calculate_fusion_score at line 55 in both files and run_diagnostic_pipeline duplicated."
+    },
+    {
+      "path_a": "d:/Diabetic_Complication_RAG/core/questionnaire.py",
+      "path_b": "d:/Diabetic_Complication_RAG/Diabetic_Complication_RAG/core/questionnaire.py",
+      "similarity": 1.0
+    },
+    {
+      "path_a": "d:/Diabetic_Complication_RAG/multi_agent/agents.py",
+      "path_b": "d:/Diabetic_Complication_RAG/Diabetic_Complication_RAG/multi_agent/agents.py",
+      "similarity": 1.0
+    },
+    {
+      "path_a": "d:/Diabetic_Complication_RAG/multi_agent/graph.py",
+      "path_b": "d:/Diabetic_Complication_RAG/Diabetic_Complication_RAG/multi_agent/graph.py",
+      "similarity": 1.0
+    },
+    {
+      "path_a": "d:/Diabetic_Complication_RAG/multi_agent/memory.py",
+      "path_b": "d:/Diabetic_Complication_RAG/Diabetic_Complication_RAG/multi_agent/memory.py",
+      "similarity": 1.0
+    },
+    {
+      "path_a": "d:/Diabetic_Complication_RAG/multi_agent/state.py",
+      "path_b": "d:/Diabetic_Complication_RAG/Diabetic_Complication_RAG/multi_agent/state.py",
+      "similarity": 1.0
+    },
+    {
+      "path_a": "d:/Diabetic_Complication_RAG/main.py",
+      "path_b": "d:/Diabetic_Complication_RAG/Diabetic_Complication_RAG/main.py",
+      "similarity": 1.0
+    },
+    {
+      "path_a": "d:/Diabetic_Complication_RAG/app.py",
+      "path_b": "d:/Diabetic_Complication_RAG/Diabetic_Complication_RAG/app.py",
+      "similarity": 1.0
+    },
+    {
+      "path_a": "d:/Diabetic_Complication_RAG/database.py",
+      "path_b": "d:/Diabetic_Complication_RAG/Diabetic_Complication_RAG/database.py",
+      "similarity": 1.0
+    },
+    {
+      "path_a": "d:/Diabetic_Complication_RAG/tests/test_db.py",
+      "path_b": "d:/Diabetic_Complication_RAG/Diabetic_Complication_RAG/tests/test_db.py",
+      "similarity": 1.0
+    }
+  ],
+  "ast_level_findings": [
+    {
+      "finding": "Repository classes share identical structure and repeated Supabase access patterns.",
+      "examples": [
+        {
+          "file": "d:/Diabetic_Complication_RAG/core/repositories/clinical_repo.py",
+          "line": 7,
+          "snippet": "class ClinicalRepository: ... get_clinical_data / save_* methods"
+        },
+        {
+          "file": "d:/Diabetic_Complication_RAG/core/repositories/ml_repo.py",
+          "line": 7,
+          "snippet": "class MLRepository: ... get_ml_prediction / save_ml_prediction"
+        }
+      ],
+      "recommendation": "Consolidate repository base patterns and ensure all DB access goes through core/database/client.py single client."
+    },
+    {
+      "finding": "Fusion score logic duplicated across core/rag_engine.py, core/services/diagnostic_service.py and core/tools.py (tools wrapper).",
+      "evidence": [
+        { "file": "d:/Diabetic_Complication_RAG/core/rag_engine.py", "line": 55 },
+        { "file": "d:/Diabetic_Complication_RAG/core/services/diagnostic_service.py", "line": 88 },
+        { "file": "d:/Diabetic_Complication_RAG/core/tools.py", "line": 115 }
+      ],
+      "recommendation": "Extract fusion calculation into a single shared utility and call from services/tools/rag_engine to avoid drift."
+    }
+  ],
+  "actionable_recommendations": [
+    "Remove or archive the duplicate subtree at d:/Diabetic_Complication_RAG/Diabetic_Complication_RAG to avoid confusion and accidental imports.",
+    "Consolidate identical modules into single canonical paths and delete duplicates after verifying Git history/intent.",
+    "Extract shared logic: fusion score calculation, repository base class, and DB client usage.",
+    "Add repository-level lint/CI check to detect duplicate files/subtrees and identical content hashes.",
+    "Add a README note and .gitignore rules to prevent nested project copies being committed in future."
+  ]
+}

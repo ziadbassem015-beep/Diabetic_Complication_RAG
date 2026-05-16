@@ -1,8 +1,9 @@
 {
-  "architecture": 9.0,
-  "rag": 9.5,
-  "agents": 10.0,
-  "prompts": 9.5,
+  "architecture": 6.5,
+  "rag": 8.0,
+  "agents": 9.5,
+  "prompts": 8.0,
   "safety": 10.0,
-  "observability": 10.0
+  "observability": 9.5,
+  "duplicates": 3.0
 }

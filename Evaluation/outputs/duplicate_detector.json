@@ -1,0 +1,203 @@
+{
+  "score": 0,
+  "exact_duplicate_groups": [],
+  "similar_pairs": [
+    {
+      "file_a": "Evaluation\\agents\\__init__.py",
+      "file_b": "Evaluation\\rag\\__init__.py",
+      "similarity": 0.881
+    },
+    {
+      "file_a": "Evaluation\\agents\\__init__.py",
+      "file_b": "Evaluation\\safety\\__init__.py",
+      "similarity": 0.871
+    },
+    {
+      "file_a": "Evaluation\\agents\\__init__.py",
+      "file_b": "Evaluation\\prompts\\__init__.py",
+      "similarity": 0.857
+    },
+    {
+      "file_a": "Evaluation\\rag\\__init__.py",
+      "file_b": "Evaluation\\safety\\__init__.py",
+      "similarity": 0.847
+    },
+    {
+      "file_a": "Evaluation\\prompts\\__init__.py",
+      "file_b": "Evaluation\\rag\\__init__.py",
+      "similarity": 0.833
+    },
+    {
+      "file_a": "Evaluation\\prompts\\__init__.py",
+      "file_b": "Evaluation\\safety\\__init__.py",
+      "similarity": 0.825
+    },
+    {
+      "file_a": "Evaluation\\agents\\__init__.py",
+      "file_b": "Evaluation\\architecture\\__init__.py",
+      "similarity": 0.824
+    },
+    {
+      "file_a": "Evaluation\\observability\\__init__.py",
+      "file_b": "Evaluation\\safety\\__init__.py",
+      "similarity": 0.812
+    },
+    {
+      "file_a": "Evaluation\\architecture\\__init__.py",
+      "file_b": "Evaluation\\rag\\__init__.py",
+      "similarity": 0.8
+    },
+    {
+      "file_a": "Evaluation\\agents\\__init__.py",
+      "file_b": "Evaluation\\observability\\__init__.py",
+      "similarity": 0.783
+    },
+    {
+      "file_a": "Evaluation\\architecture\\__init__.py",
+      "file_b": "Evaluation\\prompts\\__init__.py",
+      "similarity": 0.783
+    },
+    {
+      "file_a": "Evaluation\\architecture\\__init__.py",
+      "file_b": "Evaluation\\safety\\__init__.py",
+      "similarity": 0.765
+    },
+    {
+      "file_a": "Evaluation\\observability\\__init__.py",
+      "file_b": "Evaluation\\rag\\__init__.py",
+      "similarity": 0.758
+    }
+  ],
+  "findings": [
+    {
+      "issue": "High similarity pair detected",
+      "severity": "LOW",
+      "files": [
+        "Evaluation\\agents\\__init__.py",
+        "Evaluation\\architecture\\__init__.py"
+      ],
+      "similarity": 0.824,
+      "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+    },
+    {
+      "issue": "High similarity pair detected",
+      "severity": "LOW",
+      "files": [
+        "Evaluation\\agents\\__init__.py",
+        "Evaluation\\observability\\__init__.py"
+      ],
+      "similarity": 0.783,
+      "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+    },
+    {
+      "issue": "High similarity pair detected",
+      "severity": "LOW",
+      "files": [
+        "Evaluation\\agents\\__init__.py",
+        "Evaluation\\prompts\\__init__.py"
+      ],
+      "similarity": 0.857,
+      "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+    },
+    {
+      "issue": "High similarity pair detected",
+      "severity": "LOW",
+      "files": [
+        "Evaluation\\agents\\__init__.py",
+        "Evaluation\\rag\\__init__.py"
+      ],
+      "similarity": 0.881,
+      "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+    },
+    {
+      "issue": "High similarity pair detected",
+      "severity": "LOW",
+      "files": [
+        "Evaluation\\agents\\__init__.py",
+        "Evaluation\\safety\\__init__.py"
+      ],
+      "similarity": 0.871,
+      "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+    },
+    {
+      "issue": "High similarity pair detected",
+      "severity": "LOW",
+      "files": [
+        "Evaluation\\architecture\\__init__.py",
+        "Evaluation\\prompts\\__init__.py"
+      ],
+      "similarity": 0.783,
+      "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+    },
+    {
+      "issue": "High similarity pair detected",
+      "severity": "LOW",
+      "files": [
+        "Evaluation\\architecture\\__init__.py",
+        "Evaluation\\rag\\__init__.py"
+      ],
+      "similarity": 0.8,
+      "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+    },
+    {
+      "issue": "High similarity pair detected",
+      "severity": "LOW",
+      "files": [
+        "Evaluation\\architecture\\__init__.py",
+        "Evaluation\\safety\\__init__.py"
+      ],
+      "similarity": 0.765,
+      "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+    },
+    {
+      "issue": "High similarity pair detected",
+      "severity": "LOW",
+      "files": [
+        "Evaluation\\observability\\__init__.py",
+        "Evaluation\\rag\\__init__.py"
+      ],
+      "similarity": 0.758,
+      "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+    },
+    {
+      "issue": "High similarity pair detected",
+      "severity": "LOW",
+      "files": [
+        "Evaluation\\observability\\__init__.py",
+        "Evaluation\\safety\\__init__.py"
+      ],
+      "similarity": 0.812,
+      "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+    },
+    {
+      "issue": "High similarity pair detected",
+      "severity": "LOW",
+      "files": [
+        "Evaluation\\prompts\\__init__.py",
+        "Evaluation\\rag\\__init__.py"
+      ],
+      "similarity": 0.833,
+      "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+    },
+    {
+      "issue": "High similarity pair detected",
+      "severity": "LOW",
+      "files": [
+        "Evaluation\\prompts\\__init__.py",
+        "Evaluation\\safety\\__init__.py"
+      ],
+      "similarity": 0.825,
+      "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+    },
+    {
+      "issue": "High similarity pair detected",
+      "severity": "LOW",
+      "files": [
+        "Evaluation\\rag\\__init__.py",
+        "Evaluation\\safety\\__init__.py"
+      ],
+      "similarity": 0.847,
+      "recommendation": "Review similar files for potential consolidation or shared helper extraction."
+    }
+  ]
+}

@@ -1,6 +1,10 @@
 {
-  "issues": 1,
+  "issues": 2,
   "details": [
+    {
+      "file": "D:\\Diabetic_Complication_RAG\\Evaluation\\prompt_safety.py",
+      "issue": "uses word diagnose without clinician-disclaimer"
+    },
     {
       "file": "D:\\Diabetic_Complication_RAG\\multi_agent\\agents.py",
       "issue": "uses word diagnose without clinician-disclaimer"

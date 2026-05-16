@@ -52,23 +52,6 @@ def search_memory(patient_id: str, query: str, limit: int = 5):
         return []
 
 
-def calculate_fusion_score(ml_prob: float, nss_score: int, nds_score: int):
-    """
-    Final Score = 0.4 * ML_prob + 0.3 * NSS_norm + 0.3 * NDS_norm
-    """
-    nss_norm = min(nss_score / 14.0, 1.0)
-    nds_norm = min(nds_score / 23.0, 1.0)
-    final_score = (0.4 * ml_prob) + (0.3 * nss_norm) + (0.3 * nds_norm)
-
-    if final_score >= 0.7:
-        decision = "PDN confirmed"
-    elif final_score >= 0.4:
-        decision = "Possible neuropathy"
-    else:
-        decision = "Likely healthy"
-
-    return final_score, decision
-
 
 def run_diagnostic_pipeline(patient_id: str, user_query: str, chat_history: list = None):
     """
@@ -91,8 +74,12 @@ def run_diagnostic_pipeline(patient_id: str, user_query: str, chat_history: list
     ml_prob = ml_record["predicted_probability"] if ml_record else 0.0
     ml_class = ml_record["predicted_class"] if ml_record else 0
 
-    # 3. Fuse scores
-    fusion_score, decision = calculate_fusion_score(ml_prob, nss_score, nds_score)
+    # 3. Fuse scores — derive AI textual prediction from ML probability, then reuse final_decision
+    from core.questionnaire import final_decision
+    ai_prediction = "مريض" if ml_prob >= 0.5 else "سليم"
+    fusion_result = final_decision(ai_prediction, nds_score, nss_score)
+    fusion_score = fusion_result.get("fusion_score")
+    decision = fusion_result.get("final_decision")
 
     # 4. RAG retrieval
     memory_context = search_memory(patient_id, user_query)

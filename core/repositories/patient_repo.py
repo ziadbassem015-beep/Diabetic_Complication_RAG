@@ -1,15 +1,15 @@
 import uuid
 import logging
 from typing import List, Dict, Any, Optional
-from core.database.client import get_supabase
+from core.repositories.base_repository import BaseRepository
 
 logger = logging.getLogger(__name__)
 
-class PatientRepository:
+class PatientRepository(BaseRepository):
     
     @staticmethod
     def get_all_patients() -> List[Dict[str, Any]]:
-        client = get_supabase()
+        client = PatientRepository._client()
         if not client:
             return []
         try:
@@ -27,7 +27,7 @@ class PatientRepository:
         diabetes_type: Optional[str] = None,
         diabetes_duration: Optional[int] = None
     ) -> Dict[str, Any]:
-        client = get_supabase()
+        client = PatientRepository._client()
         if not client:
             return {}
         try:

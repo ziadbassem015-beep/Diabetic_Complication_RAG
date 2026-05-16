@@ -1,0 +1,11 @@
+{
+  "score": 10.0,
+  "findings": [],
+  "checks": {
+    "secondary_node": true,
+    "gender_gating": true,
+    "heart_risk_always": true,
+    "structured_logs": true,
+    "report_sections_10_11": true
+  }
+}

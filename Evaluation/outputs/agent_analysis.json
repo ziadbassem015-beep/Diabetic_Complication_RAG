@@ -1,0 +1,12 @@
+{
+  "score": 7,
+  "files_checked": 5,
+  "findings": [
+    {
+      "file": "multi_agent\\__init__.py",
+      "issue": "DiagnosticGraph missing initialize()",
+      "severity": "MEDIUM",
+      "recommendation": "Implement DiagnosticGraph.initialize() or confirm the graph is initialized before use."
+    }
+  ]
+}

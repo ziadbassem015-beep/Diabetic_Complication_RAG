@@ -1,0 +1,18 @@
+{
+  "score": 10,
+  "matches_found": 4,
+  "retrieval_files": [
+    "Evaluation\\rag_quality.py",
+    "core\\rag_engine.py",
+    "core\\services\\diagnostic_service.py",
+    "core\\tools.py",
+    "multi_agent\\memory.py",
+    "rag_engine.py"
+  ],
+  "findings": [
+    {
+      "issue": "RAG retrieval pipeline contains match_memory and retrieval hooks",
+      "severity": "LOW"
+    }
+  ]
+}

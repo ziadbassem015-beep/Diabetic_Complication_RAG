@@ -1,6 +1,10 @@
 {
-  "matches_found": 3,
+  "matches_found": 4,
   "details": [
+    {
+      "file": "D:\\Diabetic_Complication_RAG\\Evaluation\\rag_quality.py",
+      "hint": "Uses match_memory RPC"
+    },
     {
       "file": "D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py",
       "hint": "Uses match_memory RPC"
