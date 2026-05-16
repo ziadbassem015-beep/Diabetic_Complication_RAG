@@ -1,5 +1,12 @@
 """
 multi_agent/graph.py — LangGraph-Style Stateful Graph Orchestrator.
+"""
+import logging
+import uuid
+
+logger = logging.getLogger(__name__)
+
+"""
 
 PHASE 1: Mandatory questionnaire (eligible questions from questionnaire.py)
 PHASE 2a: ML inference + Fusion scoring (neuropathy PDN — unchanged)
