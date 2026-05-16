@@ -1,0 +1,9 @@
+{
+  "issues": 1,
+  "details": [
+    {
+      "file": "D:\\Diabetic_Complication_RAG\\multi_agent\\agents.py",
+      "issue": "uses word diagnose without clinician-disclaimer"
+    }
+  ]
+}

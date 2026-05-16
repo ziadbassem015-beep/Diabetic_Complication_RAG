@@ -1,0 +1,9 @@
+{
+  "files_checked": 5,
+  "findings": [
+    {
+      "file": "D:\\Diabetic_Complication_RAG\\multi_agent\\__init__.py",
+      "issue": "DiagnosticGraph missing initialize()"
+    }
+  ]
+}

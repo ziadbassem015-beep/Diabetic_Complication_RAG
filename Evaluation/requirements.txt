@@ -1,0 +1,2 @@
+# Minimal requirements for running evaluation scripts
+# Uses only Python standard library; no extra packages required.

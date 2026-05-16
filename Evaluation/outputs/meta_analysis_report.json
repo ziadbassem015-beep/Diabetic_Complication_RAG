@@ -1,0 +1,575 @@
+{
+  "executive_summary": {
+    "final_score_weighted": 9.66,
+    "final_score_mean": 9.67,
+    "production_readiness": {
+      "score": 7.25,
+      "classification": "Prototype",
+      "penalty": 2.5,
+      "base": 9.75
+    }
+  },
+  "system_strengths": {
+    "top_categories": [
+      [
+        "agents",
+        10.0
+      ],
+      [
+        "safety",
+        10.0
+      ],
+      [
+        "observability",
+        10.0
+      ]
+    ]
+  },
+  "critical_weaknesses": [
+    {
+      "title": "Direct DB access",
+      "description": "Direct supabase usage outside client: D:\\Diabetic_Complication_RAG\\core\\database\\client.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\clinical_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\decision_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\ml_repo.py",
+      "severity": "HIGH",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\Evaluation\\architecture\\architecture_score.py"
+      ]
+    },
+    {
+      "title": "Direct supabase usage outside client: D:\\Diabetic_Complication_RAG\\core\\database\\client.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\clinical_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\decision_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\ml_repo.py",
+      "description": "Direct supabase usage outside client: D:\\Diabetic_Complication_RAG\\core\\database\\client.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\clinical_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\decision_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\ml_repo.py",
+      "severity": "LOW",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\Evaluation\\architecture\\architecture_score.py"
+      ]
+    },
+    {
+      "title": "Module Score",
+      "description": "Score reported: 7",
+      "severity": "LOW",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\Evaluation\\architecture\\architecture_score.py"
+      ]
+    },
+    {
+      "title": "D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py",
+      "description": "Uses match_memory RPC",
+      "severity": "LOW",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py"
+      ]
+    },
+    {
+      "title": "D:\\Diabetic_Complication_RAG\\core\\services\\diagnostic_service.py",
+      "description": "Uses match_memory RPC",
+      "severity": "LOW",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\core\\services\\diagnostic_service.py"
+      ]
+    },
+    {
+      "title": "D:\\Diabetic_Complication_RAG\\Evaluation\\rag\\retrieval_quality.py",
+      "description": "Uses match_memory RPC",
+      "severity": "LOW",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\Evaluation\\rag\\retrieval_quality.py"
+      ]
+    },
+    {
+      "title": "DiagnosticGraph missing initialize()",
+      "description": "{\"file\": \"D:\\\\Diabetic_Complication_RAG\\\\multi_agent\\\\__init__.py\", \"issue\": \"DiagnosticGraph missing initialize()\"}",
+      "severity": "MEDIUM",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\multi_agent\\__init__.py"
+      ]
+    },
+    {
+      "title": "D:\\Diabetic_Complication_RAG\\core\\rag_engine.py",
+      "description": "{\"file\": \"D:\\\\Diabetic_Complication_RAG\\\\core\\\\rag_engine.py\"}",
+      "severity": "LOW",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\core\\rag_engine.py"
+      ]
+    },
+    {
+      "title": "D:\\Diabetic_Complication_RAG\\multi_agent\\agents.py",
+      "description": "{\"file\": \"D:\\\\Diabetic_Complication_RAG\\\\multi_agent\\\\agents.py\"}",
+      "severity": "LOW",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\multi_agent\\agents.py"
+      ]
+    },
+    {
+      "title": "D:\\Diabetic_Complication_RAG\\multi_agent\\state.py",
+      "description": "{\"file\": \"D:\\\\Diabetic_Complication_RAG\\\\multi_agent\\\\state.py\"}",
+      "severity": "LOW",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\multi_agent\\state.py"
+      ]
+    },
+    {
+      "title": "D:\\Diabetic_Complication_RAG\\Evaluation\\prompts\\prompt_safety_analysis.py",
+      "description": "{\"file\": \"D:\\\\Diabetic_Complication_RAG\\\\Evaluation\\\\prompts\\\\prompt_safety_analysis.py\"}",
+      "severity": "LOW",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\Evaluation\\prompts\\prompt_safety_analysis.py"
+      ]
+    },
+    {
+      "title": "uses word diagnose without clinician-disclaimer",
+      "description": "{\"file\": \"D:\\\\Diabetic_Complication_RAG\\\\multi_agent\\\\agents.py\", \"issue\": \"uses word diagnose without clinician-disclaimer\"}",
+      "severity": "MEDIUM",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\multi_agent\\agents.py"
+      ]
+    }
+  ],
+  "interpreted_risks": [
+    {
+      "title": "Direct DB access",
+      "description": "Direct supabase usage outside client: D:\\Diabetic_Complication_RAG\\core\\database\\client.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\clinical_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\decision_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\ml_repo.py",
+      "severity": "HIGH",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\Evaluation\\architecture\\architecture_score.py"
+      ],
+      "reason": "Immediate attention required: may cause incorrect clinical outputs or data leaks.",
+      "confidence": 0.85
+    },
+    {
+      "title": "Direct supabase usage outside client: D:\\Diabetic_Complication_RAG\\core\\database\\client.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\clinical_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\decision_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\ml_repo.py",
+      "description": "Direct supabase usage outside client: D:\\Diabetic_Complication_RAG\\core\\database\\client.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\clinical_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\decision_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\ml_repo.py",
+      "severity": "LOW",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\Evaluation\\architecture\\architecture_score.py"
+      ],
+      "reason": "Monitor: minor or informational.",
+      "confidence": 0.6
+    },
+    {
+      "title": "Module Score",
+      "description": "Score reported: 7",
+      "severity": "LOW",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\Evaluation\\architecture\\architecture_score.py"
+      ],
+      "reason": "Monitor: minor or informational.",
+      "confidence": 0.6
+    },
+    {
+      "title": "D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py",
+      "description": "Uses match_memory RPC",
+      "severity": "LOW",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py"
+      ],
+      "reason": "Monitor: minor or informational.",
+      "confidence": 0.6
+    },
+    {
+      "title": "D:\\Diabetic_Complication_RAG\\core\\services\\diagnostic_service.py",
+      "description": "Uses match_memory RPC",
+      "severity": "LOW",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\core\\services\\diagnostic_service.py"
+      ],
+      "reason": "Monitor: minor or informational.",
+      "confidence": 0.6
+    },
+    {
+      "title": "D:\\Diabetic_Complication_RAG\\Evaluation\\rag\\retrieval_quality.py",
+      "description": "Uses match_memory RPC",
+      "severity": "LOW",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\Evaluation\\rag\\retrieval_quality.py"
+      ],
+      "reason": "Monitor: minor or informational.",
+      "confidence": 0.6
+    },
+    {
+      "title": "DiagnosticGraph missing initialize()",
+      "description": "{\"file\": \"D:\\\\Diabetic_Complication_RAG\\\\multi_agent\\\\__init__.py\", \"issue\": \"DiagnosticGraph missing initialize()\"}",
+      "severity": "MEDIUM",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\multi_agent\\__init__.py"
+      ],
+      "reason": "Address soon: impacts reliability or maintainability.",
+      "confidence": 0.7
+    },
+    {
+      "title": "D:\\Diabetic_Complication_RAG\\core\\rag_engine.py",
+      "description": "{\"file\": \"D:\\\\Diabetic_Complication_RAG\\\\core\\\\rag_engine.py\"}",
+      "severity": "LOW",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\core\\rag_engine.py"
+      ],
+      "reason": "Monitor: minor or informational.",
+      "confidence": 0.6
+    },
+    {
+      "title": "D:\\Diabetic_Complication_RAG\\multi_agent\\agents.py",
+      "description": "{\"file\": \"D:\\\\Diabetic_Complication_RAG\\\\multi_agent\\\\agents.py\"}",
+      "severity": "LOW",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\multi_agent\\agents.py"
+      ],
+      "reason": "Monitor: minor or informational.",
+      "confidence": 0.6
+    },
+    {
+      "title": "D:\\Diabetic_Complication_RAG\\multi_agent\\state.py",
+      "description": "{\"file\": \"D:\\\\Diabetic_Complication_RAG\\\\multi_agent\\\\state.py\"}",
+      "severity": "LOW",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\multi_agent\\state.py"
+      ],
+      "reason": "Monitor: minor or informational.",
+      "confidence": 0.6
+    },
+    {
+      "title": "D:\\Diabetic_Complication_RAG\\Evaluation\\prompts\\prompt_safety_analysis.py",
+      "description": "{\"file\": \"D:\\\\Diabetic_Complication_RAG\\\\Evaluation\\\\prompts\\\\prompt_safety_analysis.py\"}",
+      "severity": "LOW",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\Evaluation\\prompts\\prompt_safety_analysis.py"
+      ],
+      "reason": "Monitor: minor or informational.",
+      "confidence": 0.6
+    },
+    {
+      "title": "uses word diagnose without clinician-disclaimer",
+      "description": "{\"file\": \"D:\\\\Diabetic_Complication_RAG\\\\multi_agent\\\\agents.py\", \"issue\": \"uses word diagnose without clinician-disclaimer\"}",
+      "severity": "MEDIUM",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\multi_agent\\agents.py"
+      ],
+      "reason": "Address soon: impacts reliability or maintainability.",
+      "confidence": 0.7
+    }
+  ],
+  "overengineering": {
+    "overengineered": false,
+    "agents_count": 0,
+    "graph_complexity": 0,
+    "reasons": []
+  },
+  "recommendations": [
+    {
+      "priority": "P0",
+      "action": "Remove direct DB access from application code; use repository layer.",
+      "rationale": "Direct supabase usage outside client: D:\\Diabetic_Complication_RAG\\core\\database\\client.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\clinical_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\decision_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\ml_repo.py",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\Evaluation\\architecture\\architecture_score.py"
+      ]
+    },
+    {
+      "priority": "P1",
+      "action": "Improve: DiagnosticGraph missing initialize()",
+      "rationale": "{\"file\": \"D:\\\\Diabetic_Complication_RAG\\\\multi_agent\\\\__init__.py\", \"issue\": \"DiagnosticGraph missing initialize()\"}",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\multi_agent\\__init__.py"
+      ]
+    },
+    {
+      "priority": "P1",
+      "action": "Improve: uses word diagnose without clinician-disclaimer",
+      "rationale": "{\"file\": \"D:\\\\Diabetic_Complication_RAG\\\\multi_agent\\\\agents.py\", \"issue\": \"uses word diagnose without clinician-disclaimer\"}",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\multi_agent\\agents.py"
+      ]
+    },
+    {
+      "priority": "P2",
+      "action": "Review: Direct supabase usage outside client: D:\\Diabetic_Complication_RAG\\core\\database\\client.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\clinical_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\decision_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\ml_repo.py",
+      "rationale": "Direct supabase usage outside client: D:\\Diabetic_Complication_RAG\\core\\database\\client.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\clinical_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\decision_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\ml_repo.py",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\Evaluation\\architecture\\architecture_score.py"
+      ]
+    },
+    {
+      "priority": "P2",
+      "action": "Review: Module Score",
+      "rationale": "Score reported: 7",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\Evaluation\\architecture\\architecture_score.py"
+      ]
+    },
+    {
+      "priority": "P2",
+      "action": "Review: D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py",
+      "rationale": "Uses match_memory RPC",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py"
+      ]
+    },
+    {
+      "priority": "P2",
+      "action": "Review: D:\\Diabetic_Complication_RAG\\core\\services\\diagnostic_service.py",
+      "rationale": "Uses match_memory RPC",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\core\\services\\diagnostic_service.py"
+      ]
+    },
+    {
+      "priority": "P2",
+      "action": "Review: D:\\Diabetic_Complication_RAG\\Evaluation\\rag\\retrieval_quality.py",
+      "rationale": "Uses match_memory RPC",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\Evaluation\\rag\\retrieval_quality.py"
+      ]
+    },
+    {
+      "priority": "P2",
+      "action": "Review: D:\\Diabetic_Complication_RAG\\core\\rag_engine.py",
+      "rationale": "{\"file\": \"D:\\\\Diabetic_Complication_RAG\\\\core\\\\rag_engine.py\"}",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\core\\rag_engine.py"
+      ]
+    },
+    {
+      "priority": "P2",
+      "action": "Review: D:\\Diabetic_Complication_RAG\\multi_agent\\agents.py",
+      "rationale": "{\"file\": \"D:\\\\Diabetic_Complication_RAG\\\\multi_agent\\\\agents.py\"}",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\multi_agent\\agents.py"
+      ]
+    },
+    {
+      "priority": "P2",
+      "action": "Review: D:\\Diabetic_Complication_RAG\\multi_agent\\state.py",
+      "rationale": "{\"file\": \"D:\\\\Diabetic_Complication_RAG\\\\multi_agent\\\\state.py\"}",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\multi_agent\\state.py"
+      ]
+    },
+    {
+      "priority": "P2",
+      "action": "Review: D:\\Diabetic_Complication_RAG\\Evaluation\\prompts\\prompt_safety_analysis.py",
+      "rationale": "{\"file\": \"D:\\\\Diabetic_Complication_RAG\\\\Evaluation\\\\prompts\\\\prompt_safety_analysis.py\"}",
+      "files": [
+        "D:\\Diabetic_Complication_RAG\\Evaluation\\prompts\\prompt_safety_analysis.py"
+      ]
+    }
+  ],
+  "raw": {
+    "category_scores": {
+      "architecture": 9.0,
+      "rag": 9.5,
+      "agents": 10.0,
+      "prompts": 9.5,
+      "safety": 10.0,
+      "observability": 10.0
+    },
+    "module_results": [
+      {
+        "name": "eval_mod_architecture_score_1778942665913",
+        "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\architecture\\architecture_score.py",
+        "category": "architecture",
+        "success": true,
+        "runtime_ms": 527.9481410980225,
+        "result": {
+          "score": 7,
+          "findings": [
+            "Direct supabase usage outside client: D:\\Diabetic_Complication_RAG\\core\\database\\client.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\clinical_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\decision_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\ml_repo.py"
+          ]
+        },
+        "error": null
+      },
+      {
+        "name": "eval_mod_retrieval_quality_1778942666442",
+        "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\rag\\retrieval_quality.py",
+        "category": "rag",
+        "success": true,
+        "runtime_ms": 618.2987689971924,
+        "result": {
+          "matches_found": 3,
+          "details": [
+            {
+              "file": "D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py",
+              "hint": "Uses match_memory RPC"
+            },
+            {
+              "file": "D:\\Diabetic_Complication_RAG\\core\\services\\diagnostic_service.py",
+              "hint": "Uses match_memory RPC"
+            },
+            {
+              "file": "D:\\Diabetic_Complication_RAG\\Evaluation\\rag\\retrieval_quality.py",
+              "hint": "Uses match_memory RPC"
+            }
+          ]
+        },
+        "error": null
+      },
+      {
+        "name": "eval_mod_agent_flow_analysis_1778942667060",
+        "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\agents\\agent_flow_analysis.py",
+        "category": "agents",
+        "success": true,
+        "runtime_ms": 598.2832908630371,
+        "result": {
+          "files_checked": 5,
+          "findings": [
+            {
+              "file": "D:\\Diabetic_Complication_RAG\\multi_agent\\__init__.py",
+              "issue": "DiagnosticGraph missing initialize()"
+            }
+          ]
+        },
+        "error": null
+      },
+      {
+        "name": "eval_mod_prompt_safety_analysis_1778942667660",
+        "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\prompts\\prompt_safety_analysis.py",
+        "category": "prompts",
+        "success": true,
+        "runtime_ms": 546.0028648376465,
+        "result": {
+          "hits": 4,
+          "details": [
+            {
+              "file": "D:\\Diabetic_Complication_RAG\\core\\rag_engine.py"
+            },
+            {
+              "file": "D:\\Diabetic_Complication_RAG\\multi_agent\\agents.py"
+            },
+            {
+              "file": "D:\\Diabetic_Complication_RAG\\multi_agent\\state.py"
+            },
+            {
+              "file": "D:\\Diabetic_Complication_RAG\\Evaluation\\prompts\\prompt_safety_analysis.py"
+            }
+          ]
+        },
+        "error": null
+      },
+      {
+        "name": "eval_mod_medical_safety_check_1778942668206",
+        "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\safety\\medical_safety_check.py",
+        "category": "safety",
+        "success": true,
+        "runtime_ms": 508.04662704467773,
+        "result": {
+          "issues": 1,
+          "details": [
+            {
+              "file": "D:\\Diabetic_Complication_RAG\\multi_agent\\agents.py",
+              "issue": "uses word diagnose without clinician-disclaimer"
+            }
+          ]
+        },
+        "error": null
+      },
+      {
+        "name": "eval_mod_telemetry_check_1778942668714",
+        "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\observability\\telemetry_check.py",
+        "category": "observability",
+        "success": true,
+        "runtime_ms": 499.2556571960449,
+        "result": {
+          "logging": 8,
+          "metrics": 1
+        },
+        "error": null
+      }
+    ],
+    "risk_summary": [
+      {
+        "title": "Direct supabase usage outside client: D:\\Diabetic_Complication_RAG\\core\\database\\client.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\clinical_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\decision_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\ml_repo.py",
+        "description": "Direct supabase usage outside client: D:\\Diabetic_Complication_RAG\\core\\database\\client.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\clinical_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\decision_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\ml_repo.py",
+        "severity": "LOW",
+        "affected_files": [
+          "D:\\Diabetic_Complication_RAG\\Evaluation\\architecture\\architecture_score.py"
+        ],
+        "recommendation": "Review and remediate."
+      },
+      {
+        "title": "Module Score",
+        "description": "Score reported: 7",
+        "severity": "LOW",
+        "affected_files": [
+          "D:\\Diabetic_Complication_RAG\\Evaluation\\architecture\\architecture_score.py"
+        ],
+        "recommendation": "Score is informational."
+      },
+      {
+        "title": "D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py",
+        "description": "Uses match_memory RPC",
+        "severity": "LOW",
+        "affected_files": [
+          "D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py"
+        ],
+        "recommendation": "Review and remediate."
+      },
+      {
+        "title": "D:\\Diabetic_Complication_RAG\\core\\services\\diagnostic_service.py",
+        "description": "Uses match_memory RPC",
+        "severity": "LOW",
+        "affected_files": [
+          "D:\\Diabetic_Complication_RAG\\core\\services\\diagnostic_service.py"
+        ],
+        "recommendation": "Review and remediate."
+      },
+      {
+        "title": "D:\\Diabetic_Complication_RAG\\Evaluation\\rag\\retrieval_quality.py",
+        "description": "Uses match_memory RPC",
+        "severity": "LOW",
+        "affected_files": [
+          "D:\\Diabetic_Complication_RAG\\Evaluation\\rag\\retrieval_quality.py"
+        ],
+        "recommendation": "Review and remediate."
+      },
+      {
+        "title": "DiagnosticGraph missing initialize()",
+        "description": "{\"file\": \"D:\\\\Diabetic_Complication_RAG\\\\multi_agent\\\\__init__.py\", \"issue\": \"DiagnosticGraph missing initialize()\"}",
+        "severity": "MEDIUM",
+        "affected_files": [
+          "D:\\Diabetic_Complication_RAG\\multi_agent\\__init__.py"
+        ],
+        "recommendation": "Review and remediate."
+      },
+      {
+        "title": "D:\\Diabetic_Complication_RAG\\core\\rag_engine.py",
+        "description": "{\"file\": \"D:\\\\Diabetic_Complication_RAG\\\\core\\\\rag_engine.py\"}",
+        "severity": "LOW",
+        "affected_files": [
+          "D:\\Diabetic_Complication_RAG\\core\\rag_engine.py"
+        ],
+        "recommendation": "Review and remediate."
+      },
+      {
+        "title": "D:\\Diabetic_Complication_RAG\\multi_agent\\agents.py",
+        "description": "{\"file\": \"D:\\\\Diabetic_Complication_RAG\\\\multi_agent\\\\agents.py\"}",
+        "severity": "LOW",
+        "affected_files": [
+          "D:\\Diabetic_Complication_RAG\\multi_agent\\agents.py"
+        ],
+        "recommendation": "Review and remediate."
+      },
+      {
+        "title": "D:\\Diabetic_Complication_RAG\\multi_agent\\state.py",
+        "description": "{\"file\": \"D:\\\\Diabetic_Complication_RAG\\\\multi_agent\\\\state.py\"}",
+        "severity": "LOW",
+        "affected_files": [
+          "D:\\Diabetic_Complication_RAG\\multi_agent\\state.py"
+        ],
+        "recommendation": "Review and remediate."
+      },
+      {
+        "title": "D:\\Diabetic_Complication_RAG\\Evaluation\\prompts\\prompt_safety_analysis.py",
+        "description": "{\"file\": \"D:\\\\Diabetic_Complication_RAG\\\\Evaluation\\\\prompts\\\\prompt_safety_analysis.py\"}",
+        "severity": "LOW",
+        "affected_files": [
+          "D:\\Diabetic_Complication_RAG\\Evaluation\\prompts\\prompt_safety_analysis.py"
+        ],
+        "recommendation": "Review and remediate."
+      },
+      {
+        "title": "uses word diagnose without clinician-disclaimer",
+        "description": "{\"file\": \"D:\\\\Diabetic_Complication_RAG\\\\multi_agent\\\\agents.py\", \"issue\": \"uses word diagnose without clinician-disclaimer\"}",
+        "severity": "MEDIUM",
+        "affected_files": [
+          "D:\\Diabetic_Complication_RAG\\multi_agent\\agents.py"
+        ],
+        "recommendation": "Review and remediate."
+      }
+    ]
+  }
+}

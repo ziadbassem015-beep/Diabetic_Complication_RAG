@@ -1,0 +1,112 @@
+[
+  {
+    "name": "eval_mod_architecture_score_1778942665913",
+    "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\architecture\\architecture_score.py",
+    "category": "architecture",
+    "success": true,
+    "runtime_ms": 527.9481410980225,
+    "result": {
+      "score": 7,
+      "findings": [
+        "Direct supabase usage outside client: D:\\Diabetic_Complication_RAG\\core\\database\\client.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\clinical_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\decision_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\ml_repo.py"
+      ]
+    },
+    "error": null
+  },
+  {
+    "name": "eval_mod_retrieval_quality_1778942666442",
+    "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\rag\\retrieval_quality.py",
+    "category": "rag",
+    "success": true,
+    "runtime_ms": 618.2987689971924,
+    "result": {
+      "matches_found": 3,
+      "details": [
+        {
+          "file": "D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py",
+          "hint": "Uses match_memory RPC"
+        },
+        {
+          "file": "D:\\Diabetic_Complication_RAG\\core\\services\\diagnostic_service.py",
+          "hint": "Uses match_memory RPC"
+        },
+        {
+          "file": "D:\\Diabetic_Complication_RAG\\Evaluation\\rag\\retrieval_quality.py",
+          "hint": "Uses match_memory RPC"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "name": "eval_mod_agent_flow_analysis_1778942667060",
+    "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\agents\\agent_flow_analysis.py",
+    "category": "agents",
+    "success": true,
+    "runtime_ms": 598.2832908630371,
+    "result": {
+      "files_checked": 5,
+      "findings": [
+        {
+          "file": "D:\\Diabetic_Complication_RAG\\multi_agent\\__init__.py",
+          "issue": "DiagnosticGraph missing initialize()"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "name": "eval_mod_prompt_safety_analysis_1778942667660",
+    "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\prompts\\prompt_safety_analysis.py",
+    "category": "prompts",
+    "success": true,
+    "runtime_ms": 546.0028648376465,
+    "result": {
+      "hits": 4,
+      "details": [
+        {
+          "file": "D:\\Diabetic_Complication_RAG\\core\\rag_engine.py"
+        },
+        {
+          "file": "D:\\Diabetic_Complication_RAG\\multi_agent\\agents.py"
+        },
+        {
+          "file": "D:\\Diabetic_Complication_RAG\\multi_agent\\state.py"
+        },
+        {
+          "file": "D:\\Diabetic_Complication_RAG\\Evaluation\\prompts\\prompt_safety_analysis.py"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "name": "eval_mod_medical_safety_check_1778942668206",
+    "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\safety\\medical_safety_check.py",
+    "category": "safety",
+    "success": true,
+    "runtime_ms": 508.04662704467773,
+    "result": {
+      "issues": 1,
+      "details": [
+        {
+          "file": "D:\\Diabetic_Complication_RAG\\multi_agent\\agents.py",
+          "issue": "uses word diagnose without clinician-disclaimer"
+        }
+      ]
+    },
+    "error": null
+  },
+  {
+    "name": "eval_mod_telemetry_check_1778942668714",
+    "path": "D:\\Diabetic_Complication_RAG\\Evaluation\\observability\\telemetry_check.py",
+    "category": "observability",
+    "success": true,
+    "runtime_ms": 499.2556571960449,
+    "result": {
+      "logging": 8,
+      "metrics": 1
+    },
+    "error": null
+  }
+]

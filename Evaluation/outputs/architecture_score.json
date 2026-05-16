@@ -1,0 +1,6 @@
+{
+  "score": 7,
+  "findings": [
+    "Direct supabase usage outside client: D:\\Diabetic_Complication_RAG\\core\\database\\client.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\clinical_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\decision_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\memory_repo.py,D:\\Diabetic_Complication_RAG\\core\\repositories\\ml_repo.py"
+  ]
+}

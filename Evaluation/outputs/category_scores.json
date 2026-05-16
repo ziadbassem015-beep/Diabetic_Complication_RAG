@@ -1,0 +1,8 @@
+{
+  "architecture": 9.0,
+  "rag": 9.5,
+  "agents": 10.0,
+  "prompts": 9.5,
+  "safety": 10.0,
+  "observability": 10.0
+}
