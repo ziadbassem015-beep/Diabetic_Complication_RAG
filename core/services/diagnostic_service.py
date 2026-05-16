@@ -265,6 +265,11 @@ class DiagnosticService:
             result["gestational"] = DiagnosticService.save_gestational_assessment(
                 patient_id, answers, patient_info
             )
+            logger.info({
+                "event": "gestational_saved",
+                "patient_id": patient_id,
+                "node": "secondary_assessment_node",
+            })
         else:
             result["skipped_assessments"].append("gestational_diabetes")
             result["gestational"] = {
@@ -275,5 +280,10 @@ class DiagnosticService:
         result["heart_risk"] = DiagnosticService.save_heart_risk_assessment(
             patient_id, answers, patient_info
         )
+        logger.info({
+            "event": "heart_risk_saved",
+            "patient_id": patient_id,
+            "node": "secondary_assessment_node",
+        })
 
         return result

@@ -531,7 +531,7 @@ class ReportGeneratorAgent:
         gd = state.gestational_results or {}
         hr = state.heart_risk_results or {}
         if gender == "Male" or gd.get("skipped"):
-            gestational_block = "Not applicable — gestational diabetes screening is for female patients only."
+            gestational_block = "Gestational: Not applicable"
         elif gd.get("ml_result"):
             ml_gd = gd["ml_result"]
             gestational_block = (
@@ -550,7 +550,7 @@ class ReportGeneratorAgent:
                 f"Questionnaire score: {hr.get('hr_scores', {}).get('hr_score', 'N/A')}"
             )
         else:
-            heart_risk_block = "No heart risk data collected."
+            heart_risk_block = "Heart Risk: Insufficient data"
 
         prompt = f"""Generate a comprehensive, patient-friendly medical diagnostic report in English.
 

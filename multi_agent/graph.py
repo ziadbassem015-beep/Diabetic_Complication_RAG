@@ -1,19 +1,15 @@
 """
 multi_agent/graph.py — LangGraph-Style Stateful Graph Orchestrator.
-"""
-import logging
-import uuid
-
-logger = logging.getLogger(__name__)
-
-"""
 
 PHASE 1: Mandatory questionnaire (eligible questions from questionnaire.py)
 PHASE 2a: ML inference + Fusion scoring (neuropathy PDN — unchanged)
 PHASE 2b: Secondary assessments (gestational + heart risk)
 PHASE 3: Reflection + Report generation
 """
+import logging
 import uuid
+
+logger = logging.getLogger(__name__)
 from .state import (
     MultiAgentState,
     NODE_PLANNER, NODE_MEMORY, NODE_REASONING, NODE_TOOL,
@@ -92,7 +88,21 @@ class DiagnosticGraph:
         step = self.state.questionnaire_step
         total = self._questionnaire_total()
 
+        if step == 0:
+            logger.info({
+                "event": "questionnaire_start",
+                "patient_id": self.state.patient_id,
+                "node": NODE_QUESTIONNAIRE,
+                "total_questions": total,
+            })
+
         if step >= total:
+            logger.info({
+                "event": "questionnaire_end",
+                "patient_id": self.state.patient_id,
+                "node": NODE_QUESTIONNAIRE,
+                "answers_collected": len(self.state.answers),
+            })
             self.state.emit("agent_start", "All questions collected. Running ML inference...", "graph")
             self.state.next_node = NODE_ML
             return
@@ -126,6 +136,11 @@ class DiagnosticGraph:
     # ══════════════════════════════════════════════════════════════
     def _run_secondary_assessment_node(self):
         """Run secondary assessments after PDN fusion via DiagnosticService."""
+        logger.info({
+            "event": "secondary_assessment_started",
+            "patient_id": self.state.patient_id,
+            "node": NODE_SECONDARY,
+        })
         self.state.log("graph", "Running secondary assessments")
         self.state.emit(
             "agent_start",
@@ -190,9 +205,23 @@ class DiagnosticGraph:
 
         elif node == NODE_ML:
             self.state = self.ml_agent.run(self.state)
+            if self.state.has_ml_data():
+                logger.info({
+                    "event": "ml_inference_done",
+                    "patient_id": self.state.patient_id,
+                    "node": NODE_ML,
+                    "predicted_class": self.state.ml_results.get("predicted_class"),
+                })
 
         elif node == NODE_FUSION:
             self.state = self.fusion_agent.run(self.state)
+            if self.state.has_fusion():
+                logger.info({
+                    "event": "fusion_completed",
+                    "patient_id": self.state.patient_id,
+                    "node": NODE_FUSION,
+                    "fusion_score": self.state.fusion_results.get("fusion_score"),
+                })
 
         elif node == NODE_SECONDARY:
             self._run_secondary_assessment_node()
