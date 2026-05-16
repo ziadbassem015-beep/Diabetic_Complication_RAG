@@ -495,113 +495,361 @@ Respond ONLY as JSON:
 class ReportGeneratorAgent:
     name = "ReportGeneratorAgent"
 
+    @staticmethod
+    def _safe_get(data: dict, key: str, default: str = "") -> str:
+        if not data:
+            return default
+        val = data.get(key)
+        if val is None or val == "":
+            return default
+        return str(val)
+
+    @staticmethod
+    def _format_risk(value) -> str:
+        if value is None or value == "":
+            return "Insufficient data for this section"
+        if isinstance(value, (int, float)):
+            if isinstance(value, float) and 0 <= value <= 1:
+                return f"{value * 100:.1f}% estimated probability"
+            return str(value)
+        return str(value)
+
+    @staticmethod
+    def _format_section(title: str, content: str) -> str:
+        body = content.strip() if content and content.strip() else "Insufficient data for this section"
+        return f"{title}\n{body}\n"
+
+    @staticmethod
+    def _severity_label(score, thresholds: list) -> str:
+        if score is None:
+            return "Insufficient data for this section"
+        for limit, label in thresholds:
+            if score <= limit:
+                return label
+        return thresholds[-1][1] if thresholds else "Insufficient data for this section"
+
+    @classmethod
+    def _questionnaire_summary(cls, state: MultiAgentState) -> str:
+        if not state.answers:
+            return "Insufficient data for this section"
+        return f"{len(state.answers)} clinical responses recorded during this assessment."
+
+    @classmethod
+    def _section_gestational_overview(cls, gender: str, gd: dict) -> str:
+        if gender == "Male":
+            return "Not applicable for male patients"
+        if gd.get("skipped"):
+            return "Not applicable for male patients"
+        ml_gd = gd.get("ml_result") or {}
+        if not ml_gd and not gd.get("gd_scores"):
+            return "Insufficient data for this section"
+        parts = []
+        if gd.get("gd_scores"):
+            parts.append(f"Screening score: {cls._safe_get(gd['gd_scores'], 'gd_score', 'N/A')}")
+        if ml_gd:
+            parts.append(f"Risk level: {cls._safe_get(ml_gd, 'risk_level', 'N/A')}")
+            parts.append(f"Estimated probability: {cls._format_risk(ml_gd.get('predicted_probability'))}")
+        return "\n".join(parts) if parts else "Insufficient data for this section"
+
+    @classmethod
+    def _section_heart_overview(cls, hr: dict) -> str:
+        ml_hr = hr.get("ml_result") or {}
+        if not ml_hr and not hr.get("hr_scores"):
+            return "Insufficient data for this section"
+        parts = []
+        if hr.get("hr_scores"):
+            parts.append(f"Screening score: {cls._safe_get(hr['hr_scores'], 'hr_score', 'N/A')}")
+        if ml_hr:
+            parts.append(f"Risk level: {cls._safe_get(ml_hr, 'risk_level', 'N/A')}")
+            parts.append(f"Estimated probability: {cls._format_risk(ml_hr.get('predicted_probability'))}")
+        return "\n".join(parts) if parts else "Insufficient data for this section"
+
+    @classmethod
+    def _section_gestational_report(cls, gender: str, gd: dict) -> str:
+        if gender == "Male" or gd.get("skipped"):
+            return "Not applicable for male patients"
+        ml_gd = gd.get("ml_result") or {}
+        scores = gd.get("gd_scores") or {}
+        if not ml_gd and not scores:
+            return "Insufficient data for this section"
+        lines = ["Gestational diabetes screening (secondary assessment)."]
+        if scores:
+            lines.append(
+                f"Combined screening score: {scores.get('gd_score', 'N/A')} "
+                f"(maximum reference {scores.get('gd_max_score', 12)})."
+            )
+        if ml_gd:
+            lines.append(f"Risk classification: {cls._safe_get(ml_gd, 'risk_level', 'N/A')}.")
+            prob = ml_gd.get("predicted_probability")
+            if prob is not None:
+                lines.append(f"Estimated probability: {prob * 100:.1f}%.")
+        lines.append(
+            "This result is supplementary and does not replace prenatal care or laboratory glucose testing."
+        )
+        return "\n".join(lines)
+
+    @classmethod
+    def _section_heart_report(cls, hr: dict) -> str:
+        ml_hr = hr.get("ml_result") or {}
+        scores = hr.get("hr_scores") or {}
+        if not ml_hr and not scores:
+            return "Insufficient data for this section"
+        lines = ["Cardiovascular risk screening (secondary assessment)."]
+        if scores:
+            lines.append(
+                f"Combined screening score: {scores.get('hr_score', 'N/A')} "
+                f"(maximum reference {scores.get('hr_max_score', 15)})."
+            )
+        if ml_hr:
+            lines.append(f"Risk classification: {cls._safe_get(ml_hr, 'risk_level', 'N/A')}.")
+            prob = ml_hr.get("predicted_probability")
+            if prob is not None:
+                lines.append(f"Estimated probability: {prob * 100:.1f}%.")
+        lines.append(
+            "This result supports lifestyle and medical follow-up; confirm with clinical evaluation."
+        )
+        return "\n".join(lines)
+
+    @classmethod
+    def generate_report(cls, state: MultiAgentState) -> str:
+        info = state.patient_info or {}
+        scores = state.clinical_scores or {}
+        ml = state.ml_results or {}
+        fusion = state.fusion_results or {}
+        gd = state.gestational_results or {}
+        hr = state.heart_risk_results or {}
+
+        gender = cls._safe_get(info, "gender", "Unknown")
+        name = cls._safe_get(info, "name", "Patient")
+        age = info.get("age")
+        age_text = str(age) if age is not None else "Not recorded"
+        diabetes_type = cls._safe_get(info, "diabetes_type", "Not recorded")
+        diabetes_duration = info.get("diabetes_duration")
+        duration_text = (
+            f"{diabetes_duration} year(s)" if diabetes_duration is not None else "Not recorded"
+        )
+
+        nss = scores.get("nss_score")
+        nds = scores.get("nds_score")
+        gum = scores.get("gum_score")
+        ulcer = scores.get("ulcer_score")
+
+        nss_cat = cls._severity_label(
+            nss, [(2, "Normal"), (4, "Mild"), (6, "Moderate"), (999, "Severe")]
+        )
+        nds_cat = cls._severity_label(
+            nds, [(5, "Normal"), (10, "Mild"), (16, "Moderate"), (999, "Severe")]
+        )
+        gum_cat = cls._severity_label(
+            gum, [(5, "Healthy"), (11, "Mild gingivitis"), (18, "Moderate gingivitis"), (999, "Severe gingivitis")]
+        )
+        ulcer_cat = cls._severity_label(
+            ulcer, [(3, "Low risk"), (7, "Moderate risk"), (999, "High risk")]
+        )
+
+        primary_decision = cls._safe_get(fusion, "final_decision", "")
+        if not primary_decision:
+            primary_decision = "Insufficient data for this section"
+        fusion_confidence = cls._safe_get(fusion, "confidence", "Not stated")
+        fusion_score = fusion.get("fusion_score")
+        fusion_score_text = (
+            f"{fusion_score:.2f}" if fusion_score is not None else "Not recorded"
+        )
+
+        ml_class = ml.get("predicted_class")
+        if ml_class is None:
+            ml_interpretation = "Insufficient data for this section"
+        else:
+            ml_interpretation = (
+                "Findings suggest possible peripheral neuropathy."
+                if ml_class == 1
+                else "Findings do not suggest peripheral neuropathy at this time."
+            )
+        ml_prob = ml.get("predicted_probability")
+        ml_prob_text = (
+            f"{ml_prob * 100:.1f}%" if ml_prob is not None else "Not recorded"
+        )
+
+        gestational_overview = cls._section_gestational_overview(gender, gd)
+        heart_overview = cls._section_heart_overview(hr)
+
+        risk_lines = []
+        if nss is not None:
+            risk_lines.append(f"Neuropathy symptom burden (NSS): {nss}/14 ({nss_cat}).")
+        else:
+            risk_lines.append("Neuropathy symptom burden (NSS): Insufficient data for this section.")
+        if nds is not None:
+            risk_lines.append(f"Neuropathy disability score (NDS): {nds}/23 ({nds_cat}).")
+        else:
+            risk_lines.append("Neuropathy disability score (NDS): Insufficient data for this section.")
+        if gum is not None:
+            risk_lines.append(f"Gum health score: {gum} ({gum_cat}).")
+        if ulcer is not None:
+            risk_lines.append(f"Foot ulcer risk score: {ulcer} ({ulcer_cat}).")
+        if ml_prob is not None:
+            risk_lines.append(f"Neuropathy model estimate: {ml_prob_text}.")
+        risk_summary = "\n".join(risk_lines)
+
+        secondary_lines = [
+            "Secondary assessments are provided for additional context only.",
+            "They do not change the primary neuropathy (PDN) conclusion.",
+            "",
+            "5.1 Gestational Diabetes",
+            gestational_overview,
+            "",
+            "5.2 Heart Risk Assessment",
+            heart_overview,
+        ]
+
+        insights = []
+        if nss is not None and nds is not None:
+            insights.append(
+                f"Symptom and disability scores (NSS {nss}/14, NDS {nds}/23) inform neuropathy status."
+            )
+        if gum is not None:
+            insights.append(f"Oral health screening indicates {gum_cat.lower()} gum status.")
+        if ulcer is not None:
+            insights.append(f"Foot ulcer screening indicates {ulcer_cat.lower()} risk.")
+        if gender == "Female" and gestational_overview != "Not applicable for male patients":
+            if "Insufficient" not in gestational_overview:
+                insights.append("Gestational diabetes screening completed as a secondary check.")
+        if "Insufficient" not in heart_overview:
+            insights.append("Cardiovascular risk screening completed as a secondary check.")
+        if not insights:
+            insights.append("Insufficient data for this section")
+        clinical_insights = "\n".join(insights)
+
+        recommendations = [
+            "Follow up with your physician to review these results and confirm any diagnosis.",
+            "Maintain blood glucose, blood pressure, and foot care as advised by your care team.",
+            "Seek urgent care for new numbness, wounds that do not heal, chest pain, or severe symptoms.",
+        ]
+        if ml_class == 1 or (nds is not None and nds >= 6) or (nss is not None and nss >= 5):
+            recommendations.append(
+                "Discuss nerve-related symptoms and protective foot care at your next visit."
+            )
+        if gender == "Female" and gestational_overview != "Not applicable for male patients":
+            if "Insufficient" not in gestational_overview:
+                recommendations.append(
+                    "If pregnant or planning pregnancy, discuss glucose monitoring with your obstetric team."
+                )
+        if "Insufficient" not in heart_overview:
+            recommendations.append(
+                "Discuss cholesterol, blood pressure, exercise, and smoking cessation with your clinician."
+            )
+
+        stratification = [
+            f"Primary (PDN): {primary_decision} (confidence: {fusion_confidence}).",
+            f"Combined neuropathy score: {fusion_score_text}.",
+        ]
+        if gender == "Female" and gestational_overview != "Not applicable for male patients":
+            stratification.append(f"Gestational diabetes (secondary): {gestational_overview.split(chr(10))[0]}.")
+        elif gender == "Male":
+            stratification.append("Gestational diabetes (secondary): Not applicable for male patients.")
+        if "Insufficient" not in heart_overview:
+            stratification.append(f"Cardiovascular risk (secondary): {heart_overview.split(chr(10))[0]}.")
+        else:
+            stratification.append("Cardiovascular risk (secondary): Insufficient data for this section.")
+
+        follow_up = [
+            "Schedule a routine review with your primary care physician or diabetes specialist.",
+            "Bring this summary and any recent laboratory results to your appointment.",
+            "Repeat screening intervals should be decided by your treating clinician.",
+        ]
+
+        neuropathy_interp_lines = []
+        if nss is not None:
+            neuropathy_interp_lines.append(f"NSS total: {nss}/14 ({nss_cat}).")
+        if nds is not None:
+            neuropathy_interp_lines.append(f"NDS total: {nds}/23 ({nds_cat}).")
+        if ml_class is not None:
+            neuropathy_interp_lines.append(f"Model estimate: {ml_interpretation} ({ml_prob_text}).")
+        if fusion_score is not None:
+            neuropathy_interp_lines.append(
+                f"Overall neuropathy assessment score: {fusion_score_text} "
+                f"(confidence: {fusion_confidence})."
+            )
+        if not neuropathy_interp_lines:
+            neuropathy_interp_lines.append("Insufficient data for this section")
+        neuropathy_interpretation = "\n".join(neuropathy_interp_lines)
+
+        patient_summary = (
+            f"Name: {name}\n"
+            f"Age: {age_text}\n"
+            f"Gender: {gender}\n"
+            f"Diabetes type: {diabetes_type}\n"
+            f"Duration of diabetes: {duration_text}\n"
+            f"{cls._questionnaire_summary(state)}"
+        )
+
+        sections = [
+            "## Patient Diagnostic Report",
+            "",
+            cls._format_section(
+                "1. Patient Summary",
+                patient_summary,
+            ),
+            cls._format_section(
+                "2. Primary Diagnosis (Neuropathy - PDN)",
+                (
+                    f"Primary diagnosis (peripheral diabetic neuropathy assessment): {primary_decision}\n"
+                    f"Assessment confidence: {fusion_confidence}."
+                ),
+            ),
+            cls._format_section(
+                "3. Neuropathy Clinical Interpretation",
+                neuropathy_interpretation,
+            ),
+            cls._format_section(
+                "4. Risk Factors Summary",
+                risk_summary,
+            ),
+            cls._format_section(
+                "5. Secondary Assessment Overview",
+                "\n".join(secondary_lines),
+            ),
+            cls._format_section(
+                "6. Clinical Insights",
+                clinical_insights,
+            ),
+            cls._format_section(
+                "7. Recommendations",
+                "\n".join(f"- {r}" for r in recommendations),
+            ),
+            cls._format_section(
+                "8. Risk Stratification Summary",
+                "\n".join(stratification),
+            ),
+            cls._format_section(
+                "9. Follow-up Advice",
+                "\n".join(follow_up),
+            ),
+            cls._format_section(
+                "10. Gestational Diabetes Report",
+                cls._section_gestational_report(gender, gd),
+            ),
+            cls._format_section(
+                "11. Cardiovascular Risk Report",
+                cls._section_heart_report(hr),
+            ),
+            (
+                "Disclaimer: This report is generated from structured screening responses "
+                "and is for educational support only. It does not replace examination, "
+                "laboratory testing, or advice from a licensed healthcare provider."
+            ),
+        ]
+
+        report = "\n".join(sections)
+        words = report.split()
+        if len(words) > 900:
+            report = " ".join(words[:900]) + "\n\n[Report truncated to 900 words.]"
+        return report
+
     def run(self, state: MultiAgentState) -> MultiAgentState:
         state.log(self.name, "Generating final medical report")
         state.emit("agent_start", "Generating structured medical report...", self.name)
 
-        scores = state.clinical_scores
-        nss = scores.get("nss_score", 0)
-        nds = scores.get("nds_score", 0)
-        gum = scores.get("gum_score", 0)
-        ulcer = scores.get("ulcer_score", 0)
-
-        nss_cat = "Normal" if nss <= 2 else "Mild" if nss <= 4 else "Moderate" if nss <= 6 else "Severe"
-        nds_cat = "Normal" if nds <= 5 else "Mild" if nds <= 10 else "Moderate" if nds <= 16 else "Severe"
-        gum_cat = "Healthy" if gum <= 5 else "Mild gingivitis" if gum <= 11 else "Moderate gingivitis" if gum <= 18 else "Severe gingivitis"
-        ulcer_cat = "Low risk" if ulcer < 4 else "Moderate risk" if ulcer < 8 else "High risk"
-
-        ml = state.ml_results
-        fusion = state.fusion_results
-        reflections_summary = "; ".join([
-            f"[{r.iteration}] {'OK' if r.is_consistent else ', '.join(r.issues[:1])}"
-            for r in state.reflections[-3:]
-        ])
-
-        decision_path = "\n".join(state.decision_path) or "Direct fusion computation"
-        rag_context = "\n".join([
-            f"  - {r.get('content','')[:80]}" for r in state.long_term[:3]
-        ]) or "No prior conversation history"
-        
-        episodic_context = "\n".join([
-            f"  - Date: {r.get('created_at', '')[:10]} | Diagnosis: {r.get('final_decision')} | NSS: {r.get('nss_score')} | NDS: {r.get('nds_score')}" 
-            for r in state.episodic[:3]
-        ]) or "No previous diagnoses on record."
-
-        gender = state.patient_info.get("gender", "")
-        gd = state.gestational_results or {}
-        hr = state.heart_risk_results or {}
-        if gender == "Male" or gd.get("skipped"):
-            gestational_block = "Gestational: Not applicable"
-        elif gd.get("ml_result"):
-            ml_gd = gd["ml_result"]
-            gestational_block = (
-                f"Risk level: {ml_gd.get('risk_level', 'N/A')} | "
-                f"Probability: {ml_gd.get('predicted_probability', 0):.1%} | "
-                f"Questionnaire score: {gd.get('gd_scores', {}).get('gd_score', 'N/A')}"
-            )
-        else:
-            gestational_block = "No gestational diabetes data collected."
-
-        if hr.get("ml_result"):
-            ml_hr = hr["ml_result"]
-            heart_risk_block = (
-                f"Risk level: {ml_hr.get('risk_level', 'N/A')} | "
-                f"Probability: {ml_hr.get('predicted_probability', 0):.1%} | "
-                f"Questionnaire score: {hr.get('hr_scores', {}).get('hr_score', 'N/A')}"
-            )
-        else:
-            heart_risk_block = "Heart Risk: Insufficient data"
-
-        prompt = f"""Generate a comprehensive, patient-friendly medical diagnostic report in English.
-
-=== PATIENT ===
-Name: {state.patient_info.get('name')}, Age: {state.patient_info.get('age')}
-
-=== CLINICAL SCORES ===
-NSS: {nss}/14 ({nss_cat}) | NDS: {nds}/23 ({nds_cat})
-Gum Health: {gum} ({gum_cat}) | Ulcer Risk: {ulcer} ({ulcer_cat})
-
-=== ML INFERENCE ===
-Predicted Class: {ml.get('predicted_class', 'N/A')} ({'Neuropathy' if ml.get('predicted_class') == 1 else 'Healthy'})
-Probability: {ml.get('predicted_probability', 0):.1%} | Source: {ml.get('source', 'N/A')}
-
-=== FUSION DECISION ===
-Score: {fusion.get('fusion_score', 0)} / threshold {fusion.get('threshold', 1.55)}
-Decision: {fusion.get('final_decision', 'N/A')}
-Confidence: {fusion.get('confidence', 'N/A')}
-Decision Path: {decision_path}
-
-=== AGENT REFLECTIONS ===
-{reflections_summary or 'No inconsistencies detected.'}
-
-=== RAG MEMORY CONTEXT ===
-{rag_context}
-
-=== PAST MEDICAL HISTORY (PREVIOUS DIAGNOSES) ===
-{episodic_context}
-
-=== SECONDARY ASSESSMENTS ===
-Gestational Diabetes: {gestational_block}
-Heart Risk: {heart_risk_block}
-
-=== REASONING ITERATIONS ===
-Total iterations: {state.iteration}
-Tools called: {len([e for e in state.audit_log if 'Executing' in e.action])}
-
-Write the final report with:
-1. 🏁 Final Diagnosis (one clear sentence)
-2. 🧠 Neuropathy Assessment (NSS + NDS + ML model)
-3. 🦷 Gum Health Assessment
-4. 🩹 Foot Ulcer Risk Assessment
-5. 📊 Decision Explanation (how the score was computed, in simple terms)
-6. ⏳ Medical History Comparison (Briefly compare current state with past diagnoses if available)
-7. 🔍 Uncertainty Note (what we are not certain about)
-8. 📌 Recommendations (4-5 bullet points)
-9. 🚨 Disclaimer: This is AI-assisted analysis only. Always consult a certified physician.
-10. 🤰 Gestational Diabetes Screening (use gestational data above; if male, state Not applicable)
-11. ❤️ Heart Risk Assessment (always include cardiovascular risk summary)"""
-
-        report = call_llm(prompt)
+        report = self.generate_report(state)
         state.final_report = report
         state.is_complete = True
         state.next_node = NODE_END
