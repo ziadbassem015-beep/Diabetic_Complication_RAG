@@ -133,7 +133,7 @@ def test_e2e_report_includes_sections_10_and_11(male_patient, minimal_answers):
     assert "11." in report or "Heart Risk" in report
 
 
-def test_report_prompt_gestational_not_applicable_male():
+def test_report_gestational_not_applicable_male():
     state = MultiAgentState(
         patient_id="p1",
         patient_info={"gender": "Male", "name": "T", "age": 40},
@@ -144,19 +144,13 @@ def test_report_prompt_gestational_not_applicable_male():
         clinical_scores={"nss_score": 2, "nds_score": 2, "gum_score": 1, "ulcer_score": 0},
     )
 
-    captured = {}
+    ReportGeneratorAgent().run(state)
 
-    def fake_llm(prompt):
-        captured["prompt"] = prompt
-        return "report body"
-
-    with patch("multi_agent.agents.call_llm", side_effect=fake_llm):
-        ReportGeneratorAgent().run(state)
-
-    assert "Gestational: Not applicable" in captured["prompt"]
+    assert "Not applicable for male patients" in state.final_report
+    assert "10. Gestational Diabetes Report" in state.final_report
 
 
-def test_report_prompt_heart_risk_insufficient_data():
+def test_report_heart_risk_insufficient_data():
     state = MultiAgentState(
         patient_id="p1",
         patient_info={"gender": "Female", "name": "T", "age": 30},
@@ -167,16 +161,10 @@ def test_report_prompt_heart_risk_insufficient_data():
         clinical_scores={"nss_score": 2, "nds_score": 2, "gum_score": 1, "ulcer_score": 0},
     )
 
-    captured = {}
+    ReportGeneratorAgent().run(state)
 
-    def fake_llm(prompt):
-        captured["prompt"] = prompt
-        return "report body"
-
-    with patch("multi_agent.agents.call_llm", side_effect=fake_llm):
-        ReportGeneratorAgent().run(state)
-
-    assert "Heart Risk: Insufficient data" in captured["prompt"]
+    assert "Insufficient data for this section" in state.final_report
+    assert "11. Cardiovascular Risk Report" in state.final_report
 
 
 def test_questionnaire_completes_before_ml(male_patient, minimal_answers):
