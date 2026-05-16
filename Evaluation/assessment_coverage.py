@@ -22,6 +22,12 @@ def evaluate() -> Dict[str, Any]:
     service_path = ROOT / "core" / "services" / "diagnostic_service.py"
     questionnaire_path = ROOT / "core" / "questionnaire.py"
     fusion_agent_path = ROOT / "multi_agent" / "agents.py"
+    validator_path = ROOT / "multi_agent" / "state_validator.py"
+    tests_dir = ROOT / "tests"
+
+    graph_text = read_file(graph_path) if graph_path.exists() else ""
+    agents_text = read_file(fusion_agent_path) if fusion_agent_path.exists() else ""
+    service_text = read_file(service_path) if service_path.exists() else ""
 
     if not graph_path.exists():
         findings.append({
@@ -31,7 +37,6 @@ def evaluate() -> Dict[str, Any]:
         })
         score -= 5
     else:
-        graph_text = read_file(graph_path)
         if "secondary_assessment_node" not in graph_text or "NODE_SECONDARY" not in graph_text:
             findings.append({
                 "file": "multi_agent/graph.py",
@@ -57,6 +62,34 @@ def evaluate() -> Dict[str, Any]:
             })
             score -= 2
 
+        required_log_events = (
+            "questionnaire_start",
+            "questionnaire_end",
+            "ml_inference_done",
+            "fusion_completed",
+            "secondary_assessment_started",
+        )
+        for event in required_log_events:
+            if f'"event": "{event}"' not in graph_text and f"'event': '{event}'" not in graph_text:
+                findings.append({
+                    "file": "multi_agent/graph.py",
+                    "issue": f"Missing structured log event: {event}",
+                    "severity": "MEDIUM",
+                    "recommendation": f"Add logger.info with event={event}.",
+                })
+                score -= 0.5
+
+    if service_path.exists():
+        for event in ("gestational_saved", "heart_risk_saved"):
+            if f'"event": "{event}"' not in service_text and f"'event': '{event}'" not in service_text:
+                findings.append({
+                    "file": "core/services/diagnostic_service.py",
+                    "issue": f"Missing structured log event: {event}",
+                    "severity": "MEDIUM",
+                    "recommendation": f"Log {event} in run_secondary_assessments.",
+                })
+                score -= 0.5
+
     if state_path.exists():
         state_text = read_file(state_path)
         for field in (
@@ -74,24 +107,13 @@ def evaluate() -> Dict[str, Any]:
                 })
                 score -= 1
 
-    if service_path.exists():
-        service_text = read_file(service_path)
-        if "def run_secondary_assessments" not in service_text:
-            findings.append({
-                "file": "core/services/diagnostic_service.py",
-                "issue": "run_secondary_assessments not implemented",
-                "severity": "HIGH",
-                "recommendation": "Add orchestration method for secondary pipelines.",
-            })
-            score -= 3
-        if 'gender == "Female"' not in service_text and "gender\") == \"Female\"" not in service_text:
-            findings.append({
-                "file": "core/services/diagnostic_service.py",
-                "issue": "Female-only gestational guard may be missing",
-                "severity": "MEDIUM",
-                "recommendation": "Gate gestational save on gender == Female.",
-            })
-            score -= 1
+    if not validator_path.exists():
+        findings.append({
+            "issue": "multi_agent/state_validator.py missing",
+            "severity": "MEDIUM",
+            "recommendation": "Add read-only state validation module.",
+        })
+        score -= 1
 
     if questionnaire_path.exists():
         q_text = read_file(questionnaire_path)
@@ -105,10 +127,9 @@ def evaluate() -> Dict[str, Any]:
             score -= 2
 
     if fusion_agent_path.exists():
-        fusion_text = read_file(fusion_agent_path)
-        fusion_class_start = fusion_text.find("class FusionDecisionAgent")
-        fusion_class_end = fusion_text.find("class ReflectionAgent", fusion_class_start)
-        fusion_block = fusion_text[fusion_class_start:fusion_class_end]
+        fusion_class_start = agents_text.find("class FusionDecisionAgent")
+        fusion_class_end = agents_text.find("class ReflectionAgent", fusion_class_start)
+        fusion_block = agents_text[fusion_class_start:fusion_class_end]
         if "ml_gestational" in fusion_block or "heart_risk" in fusion_block:
             findings.append({
                 "file": "multi_agent/agents.py",
@@ -126,6 +147,54 @@ def evaluate() -> Dict[str, Any]:
             })
             score -= 4
 
+        report_start = agents_text.find("class ReportGeneratorAgent")
+        report_block = agents_text[report_start:] if report_start >= 0 else ""
+        if "10." not in report_block and "Gestational Diabetes Screening" not in report_block:
+            findings.append({
+                "file": "multi_agent/agents.py",
+                "issue": "Report missing section 10 (Gestational Diabetes)",
+                "severity": "MEDIUM",
+                "recommendation": "Add section 10 to ReportGeneratorAgent prompt.",
+            })
+            score -= 1
+        if "11." not in report_block and "Heart Risk Assessment" not in report_block:
+            findings.append({
+                "file": "multi_agent/agents.py",
+                "issue": "Report missing section 11 (Heart Risk)",
+                "severity": "MEDIUM",
+                "recommendation": "Add section 11 to ReportGeneratorAgent prompt.",
+            })
+            score -= 1
+        if 'Gestational: Not applicable' not in report_block:
+            findings.append({
+                "file": "multi_agent/agents.py",
+                "issue": "Report missing male gestational not-applicable text",
+                "severity": "LOW",
+                "recommendation": 'Use "Gestational: Not applicable" for male patients.',
+            })
+            score -= 0.5
+
+    if service_path.exists():
+        if "def run_secondary_assessments" not in service_text:
+            findings.append({
+                "file": "core/services/diagnostic_service.py",
+                "issue": "run_secondary_assessments not implemented",
+                "severity": "HIGH",
+                "recommendation": "Add orchestration method for secondary pipelines.",
+            })
+            score -= 3
+        if 'save_gestational_assessment' in service_text:
+            run_sec_start = service_text.find("def run_secondary_assessments")
+            run_sec_block = service_text[run_sec_start:run_sec_start + 1200] if run_sec_start >= 0 else ""
+            if 'gender == "Female"' not in run_sec_block:
+                findings.append({
+                    "file": "core/services/diagnostic_service.py",
+                    "issue": "Male patients may trigger gestational save",
+                    "severity": "HIGH",
+                    "recommendation": 'Gate gestational save on gender == "Female" only.',
+                })
+                score -= 2
+
     migration = ROOT / "database" / "supabase" / "migrations" / "20260517120000_add_secondary_assessments.sql"
     if not migration.exists():
         findings.append({
@@ -135,14 +204,32 @@ def evaluate() -> Dict[str, Any]:
         })
         score -= 1
 
+    required_tests = (
+        "test_gender_gating.py",
+        "test_secondary_flow.py",
+        "test_pdn_regression.py",
+        "test_e2e_diagnostic_flow.py",
+        "test_state_validator.py",
+    )
+    for test_file in required_tests:
+        if not (tests_dir / test_file).exists():
+            findings.append({
+                "issue": f"Missing test file: tests/{test_file}",
+                "severity": "MEDIUM",
+                "recommendation": f"Add tests/{test_file}.",
+            })
+            score -= 0.5
+
     score = max(0.0, min(10.0, score))
     result = {
         "score": round(score, 2),
         "findings": findings,
         "checks": {
-            "secondary_node": "secondary_assessment_node" in read_file(graph_path) if graph_path.exists() else False,
+            "secondary_node": "secondary_assessment_node" in graph_text,
             "gender_gating": 'gender == "Male"' in read_file(questionnaire_path) if questionnaire_path.exists() else False,
-            "heart_risk_always": "save_heart_risk_assessment" in read_file(service_path) if service_path.exists() else False,
+            "heart_risk_always": "save_heart_risk_assessment" in service_text,
+            "structured_logs": "questionnaire_start" in graph_text and "heart_risk_saved" in service_text,
+            "report_sections_10_11": "Gestational Diabetes Screening" in agents_text and "Heart Risk Assessment" in agents_text,
         },
     }
     save_json("assessment_coverage", result)

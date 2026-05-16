@@ -4,21 +4,24 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 from typing import Any, Dict
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-import pytest
+# Mock heavy optional deps before any project imports (collection-safe).
+if "openai" not in sys.modules:
+    _openai = MagicMock()
+    _openai.OpenAI = MagicMock(return_value=MagicMock())
+    sys.modules["openai"] = _openai
+
+if "dotenv" not in sys.modules:
+    _dotenv = MagicMock()
+    _dotenv.load_dotenv = MagicMock(return_value=None)
+    sys.modules["dotenv"] = _dotenv
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-
-@pytest.fixture(autouse=True)
-def _mock_openai_module():
-    """Avoid OpenAI import errors when multi_agent loads rag_engine."""
-    mock_openai = MagicMock()
-    with patch.dict(sys.modules, {"openai": mock_openai}):
-        yield
+import pytest  # noqa: E402
 
 
 @pytest.fixture

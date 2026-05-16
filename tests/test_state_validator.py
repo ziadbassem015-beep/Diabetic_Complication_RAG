@@ -1,6 +1,6 @@
 """State validator unit tests."""
 from multi_agent.state import MultiAgentState
-from multi_agent.state_validator import (
+from multi_agent.state_validator import (  # noqa: E402 — state only, not package graph export
     validate_before_fusion,
     validate_before_report,
     validate_before_secondary,

@@ -53,7 +53,7 @@ def test_route_secondary_only_after_fusion(male_patient):
         state.secondary_assessments_complete = False
 
         assert graph._route(NODE_ML, NODE_FUSION) == NODE_FUSION
-        assert graph._route(NODE_FUSION, NODE_REFLECTION) == NODE_SECONDARY
+        assert graph._route(NODE_FUSION, NODE_REFLECTION) == NODE_FUSION
 
         state.fusion_results = {"fusion_score": 1.0, "final_decision": "test"}
         assert graph._route(NODE_FUSION, NODE_REFLECTION) == NODE_SECONDARY

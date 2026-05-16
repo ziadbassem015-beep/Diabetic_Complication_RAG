@@ -6,10 +6,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from multi_agent.agents import ReportGeneratorAgent
+from multi_agent.graph import NODE_QUESTIONNAIRE
 from multi_agent.state import (
     NODE_FUSION,
     NODE_ML,
-    NODE_QUESTIONNAIRE,
     NODE_REFLECTION,
     NODE_REPORT,
     NODE_SECONDARY,
@@ -31,6 +31,9 @@ def _mock_fusion_result():
         "threshold": 1.55,
         "final_decision": "Likely Healthy",
         "confidence": "Medium",
+        "ai_binary": 0,
+        "nds_binary": 0,
+        "nss_binary": 0,
     }
 
 
@@ -183,8 +186,7 @@ def test_questionnaire_completes_before_ml(male_patient, minimal_answers):
     graph._run_questionnaire_node()
     assert graph.state.waiting_for_patient
 
-    graph.submit_patient_answer(
-        graph.eligible_questions[-1]["key"],
-        graph.eligible_questions[-1]["options"][0]["label"],
-    )
-    assert graph.state.next_node == NODE_ML or graph.state.has_ml_data()
+    last_q = graph.eligible_questions[-1]
+    with patch.object(graph, "run_until_pause", return_value=[]):
+        graph.submit_patient_answer(last_q["key"], last_q["options"][0]["label"])
+    assert graph.state.next_node == NODE_ML

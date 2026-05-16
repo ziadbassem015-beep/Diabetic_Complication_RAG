@@ -1,0 +1,34 @@
+name: Tests
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Unit and integration tests
+        run: python -m pytest tests/ -v --tb=short
+
+      - name: Evaluation — assessment coverage
+        run: python assessment_coverage.py
+        working-directory: Evaluation
+
+      - name: Evaluation — full suite
+        run: python run_all_evaluations.py --json-only
+        working-directory: Evaluation
