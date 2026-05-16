@@ -291,6 +291,15 @@ class DiagnosticGraph:
         Run the graph until it pauses for patient input or reaches END.
         Returns list of stream events accumulated during this run.
         """
+        if not getattr(self, "_graph_started", False):
+            self._graph_started = True
+            logger.info({
+                "event": "graph_start",
+                "patient_id": self.state.patient_id,
+                "node": "graph",
+                "eligible_questions": self._questionnaire_total(),
+            })
+
         self.state.stream_events.clear()
         current = self.state.next_node
         visited = 0
@@ -302,12 +311,29 @@ class DiagnosticGraph:
                 break
 
             next_node = self._run_node(current)
-            next_node = self._route(current, next_node)
+            routed = self._route(current, next_node)
+            if routed != next_node:
+                logger.info({
+                    "event": "node_transition",
+                    "patient_id": self.state.patient_id,
+                    "node": current,
+                    "proposed": next_node,
+                    "routed": routed,
+                })
+            next_node = routed
             current = next_node
             self.state.next_node = current
 
             if current == NODE_WAIT:
                 break
+
+        if self.state.is_complete or current == NODE_END:
+            logger.info({
+                "event": "graph_end",
+                "patient_id": self.state.patient_id,
+                "node": "graph",
+                "is_complete": self.state.is_complete,
+            })
 
         events = list(self.state.stream_events)
         self.state.stream_events.clear()

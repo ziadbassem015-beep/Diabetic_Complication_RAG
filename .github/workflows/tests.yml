@@ -25,6 +25,12 @@ jobs:
       - name: Unit and integration tests
         run: python -m pytest tests/ -v --tb=short
 
+      - name: Runtime orchestration health
+        run: python -m pytest tests/test_runtime_orchestration_health.py -v --tb=short
+
+      - name: Full system runtime check
+        run: python scripts/run_full_system_check.py
+
       - name: Evaluation — assessment coverage
         run: python assessment_coverage.py
         working-directory: Evaluation
